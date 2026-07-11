@@ -387,11 +387,11 @@ export default function Dashboard() {
           }}
         >
           <div 
-            className="relative w-full max-w-5xl h-[80vh] bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-5xl h-[80vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left side section: 15% width */}
-            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-800/80 bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
+            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-200 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
               {[...galleryImages].reverse().map((imgUrl, idx) => {
                 const isSelected = selectedGalleryImage === imgUrl;
                 return (
@@ -400,7 +400,7 @@ export default function Dashboard() {
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                       isSelected 
                         ? 'border-2 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' 
-                        : 'border border-slate-800/80 hover:border-slate-700'
+                        : 'border border-slate-200 dark:border-slate-800/80 hover:border-slate-350 dark:hover:border-slate-700'
                     }`}
                     onClick={() => setSelectedGalleryImage(imgUrl)}
                   >
@@ -411,7 +411,7 @@ export default function Dashboard() {
             </div>
 
             {/* Right side section: 85% width */}
-            <div className="flex-1 bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
+            <div className="flex-1 bg-slate-100/20 dark:bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
               <img 
                 src={selectedGalleryImage} 
                 alt="Selected gallery view" 
@@ -422,7 +422,7 @@ export default function Dashboard() {
                   setGalleryImages(null);
                   setSelectedGalleryImage(null);
                 }}
-                className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+                className="absolute top-4 right-4 p-2 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white transition-all shadow-md cursor-pointer"
                 aria-label="Close gallery popup"
               >
                 <X className="h-5 w-5" />

@@ -639,7 +639,7 @@ export default function NewTripPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-8 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md border border-slate-200 dark:border-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl shadow-slate-100/50 dark:shadow-none">
           {/* Destination */}
           <div className="relative" ref={dropdownRef}>
             <Input
@@ -731,24 +731,24 @@ export default function NewTripPage() {
 
           {/* Traveller Count */}
           <div className="space-y-2">
-            <label htmlFor="travellers" className="block text-xs font-semibold text-slate-300 tracking-wide">
+            <label htmlFor="travellers" className="block text-xs font-semibold text-slate-650 dark:text-slate-300 tracking-wide">
               Number of Travelers * (Limit 1 - 20)
             </label>
             <div className="flex items-center gap-3">
               <button
                 type="button"
                 onClick={() => setTravellerCount(Math.max(1, travellerCount - 1))}
-                className="w-10 h-10 flex items-center justify-center bg-slate-950 border border-slate-800 rounded-lg text-slate-300 hover:text-white hover:border-slate-700 font-bold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 font-bold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               >
                 -
               </button>
-              <div className="w-16 h-10 flex items-center justify-center bg-slate-950/50 border border-slate-800 rounded-lg text-white font-semibold text-sm">
+              <div className="w-16 h-10 flex items-center justify-center bg-slate-50/50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-900 dark:text-white font-semibold text-sm">
                 {travellerCount}
               </div>
               <button
                 type="button"
                 onClick={() => setTravellerCount(Math.min(20, travellerCount + 1))}
-                className="w-10 h-10 flex items-center justify-center bg-slate-950 border border-slate-800 rounded-lg text-slate-300 hover:text-white hover:border-slate-700 font-bold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:border-slate-300 dark:hover:border-slate-700 font-bold transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               >
                 +
               </button>
@@ -759,17 +759,17 @@ export default function NewTripPage() {
           </div>
 
           {travellerCount > 1 && (
-            <div className="space-y-4 p-4 bg-slate-950/20 border border-slate-800/85 rounded-2xl animate-in fade-in slide-in-from-top-3 duration-250">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Additional Travelers Info</h3>
+            <div className="space-y-4 p-4 bg-slate-50/50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-800/85 rounded-2xl animate-in fade-in slide-in-from-top-3 duration-250">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Additional Travelers Info</h3>
               <div className="space-y-3">
                 {additionalTravelers.map((traveler, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pb-3 border-b border-slate-900 last:border-b-0 last:pb-0">
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pb-3 border-b border-slate-200 dark:border-slate-900 last:border-b-0 last:pb-0">
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Name</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Name</label>
                       <input
                         type="text"
                         placeholder="Name"
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-white text-xs focus:outline-none transition-all"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                         value={traveler.name}
                         onChange={(e) => {
                           const updated = [...additionalTravelers];
@@ -779,11 +779,11 @@ export default function NewTripPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Email ID</label>
+                      <label className="text-[10px] text-slate-500 dark:text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Email ID</label>
                       <input
                         type="email"
                         placeholder="Email Address"
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-white text-xs focus:outline-none transition-all"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                         value={traveler.email}
                         onChange={(e) => {
                           const updated = [...additionalTravelers];
@@ -827,7 +827,7 @@ export default function NewTripPage() {
 
           {/* Interests */}
           <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-300 tracking-wide">
+            <label className="block text-xs font-semibold text-slate-650 dark:text-slate-300 tracking-wide">
               Interests & Activities * (Select at least one)
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
@@ -840,8 +840,8 @@ export default function NewTripPage() {
                     onClick={() => handleInterestToggle(interest.id)}
                     className={`flex items-center justify-center p-3 text-xs font-semibold rounded-xl border text-center transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
                       isSelected 
-                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-300 shadow-md shadow-indigo-500/5' 
-                        : 'bg-slate-950/60 border-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-900/50 hover:border-slate-700'
+                        ? 'bg-indigo-500/10 border-indigo-500 text-indigo-600 dark:text-indigo-300 shadow-md shadow-indigo-500/5' 
+                        : 'bg-slate-100/50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700'
                     }`}
                   >
                     {interest.label}
@@ -853,13 +853,13 @@ export default function NewTripPage() {
 
           {/* Trip Photos */}
           <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-300 tracking-wide">
+            <label className="block text-xs font-semibold text-slate-650 dark:text-slate-300 tracking-wide">
               Trip Photos (Optional - Select single/multiple or take onscreen selfie)
             </label>
 
             <div className="flex flex-wrap gap-3 items-center">
               {tripImages.map((imgUrl, idx) => (
-                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
+                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
                   <img src={imgUrl} alt={`Uploaded photo ${idx + 1}`} className="w-full h-full object-cover" />
                   {idx === 0 && (
                     <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-500 text-[8px] font-bold text-white rounded uppercase tracking-wider">
@@ -878,16 +878,16 @@ export default function NewTripPage() {
 
               {/* Add triggers */}
               <div className="flex gap-2">
-                <label className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-800 hover:border-slate-750 rounded-xl cursor-pointer bg-slate-950/40 hover:bg-slate-950/60 transition-colors">
+                <label className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-750 rounded-xl cursor-pointer bg-slate-100/40 dark:bg-slate-950/40 hover:bg-slate-200/40 dark:hover:bg-slate-950/60 transition-colors">
                   <Plus className="h-5 w-5 mb-0.5 text-indigo-400" />
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Drive</span>
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Drive</span>
                   <input type="file" className="hidden" accept="image/*" multiple onChange={handleDriveUpload} />
                 </label>
 
                 <button
                   type="button"
                   onClick={openCamera}
-                  className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-800 hover:border-slate-750 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 transition-colors cursor-pointer"
+                  className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-750 rounded-xl bg-slate-100/40 dark:bg-slate-950/40 hover:bg-slate-200/40 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
                 >
                   <Compass className="h-5 w-5 mb-0.5 text-indigo-400 animate-pulse" />
                   <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Selfie</span>

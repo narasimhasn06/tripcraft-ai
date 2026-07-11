@@ -852,13 +852,13 @@ export default function TripDetails({ params }: PageProps) {
 
         {/* ── Left Summary Panel ───────────────────────────────────────── */}
         <div className="lg:col-span-1 space-y-5">
-          <Card className="p-6 space-y-5 sticky top-24 border-slate-900/60 bg-slate-900/20">
+          <Card className="p-6 space-y-5 sticky top-24 border-slate-200 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/40 backdrop-blur-md shadow-xl shadow-slate-100/50 dark:shadow-none">
             
             {/* Specs Block */}
             <div className="space-y-4">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Specifications</span>
               
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-200/60 dark:border-slate-900/60">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" /> Travelers
                 </span>
@@ -867,7 +867,7 @@ export default function TripDetails({ params }: PageProps) {
                 </Badge>
               </div>
 
-              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-200/60 dark:border-slate-900/60">
                 <span className="text-slate-400 flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5" /> Budget
                 </span>
@@ -882,7 +882,7 @@ export default function TripDetails({ params }: PageProps) {
               </div>
             </div>
 
-            <hr className="border-slate-900/60" />
+            <hr className="border-slate-200/60 dark:border-slate-900/60" />
 
             {/* Interests */}
             <div>
@@ -891,7 +891,7 @@ export default function TripDetails({ params }: PageProps) {
                 {currentTrip.interests.map((interest) => (
                   <span
                     key={interest}
-                    className="text-[10px] font-semibold text-slate-300 bg-slate-950 px-2.5 py-1 border border-slate-800 rounded-lg"
+                    className="text-[10px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-950 px-2.5 py-1 border border-slate-200 dark:border-slate-800 rounded-lg"
                   >
                     {interest}
                   </span>
@@ -901,15 +901,15 @@ export default function TripDetails({ params }: PageProps) {
 
             {travelersList.length > 0 && (
               <>
-                <hr className="border-slate-900/60" />
+                <hr className="border-slate-200/60 dark:border-slate-900/60" />
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2.5">Travelers List</span>
                   <div className="space-y-2">
                     {travelersList.map((traveler, index) => (
-                      <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-900">
+                      <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2.5 rounded-xl bg-slate-100/40 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-900">
                         <div className="flex items-center gap-2">
                           <Users className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-                          <span className="text-xs font-bold text-slate-200 dark:text-slate-200">
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
                             {traveler.name || `Traveler #${index + 2}`}
                           </span>
                         </div>
@@ -926,7 +926,7 @@ export default function TripDetails({ params }: PageProps) {
               </>
             )}
 
-            <hr className="border-slate-900/60" />
+            <hr className="border-slate-200/60 dark:border-slate-900/60" />
 
             {/* Editable Notes */}
             <div>
@@ -937,7 +937,7 @@ export default function TripDetails({ params }: PageProps) {
                 <Textarea
                   id="tripNotesInput"
                   rows={4}
-                  className="bg-slate-950 border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all rounded-xl"
+                  className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all rounded-xl"
                   value={cleanNotes || ''}
                   onChange={(e) => {
                     const text = e.target.value;
@@ -966,13 +966,13 @@ export default function TripDetails({ params }: PageProps) {
                   placeholder="e.g. Vegetarian diet, accessibility, quiet slots..."
                 />
               ) : (
-                <p className="text-xs text-slate-400 bg-slate-950/40 p-4 rounded-xl border border-slate-900 leading-relaxed min-h-[60px]">
+                <p className="text-xs text-slate-600 dark:text-slate-400 bg-slate-100/40 dark:bg-slate-950/40 p-4 rounded-xl border border-slate-200 dark:border-slate-900 leading-relaxed min-h-[60px]">
                   {cleanNotes || 'No custom notes provided.'}
                 </p>
               )}
             </div>
 
-            <hr className="border-slate-900/60" />
+            <hr className="border-slate-200/60 dark:border-slate-900/60" />
 
             {/* Trip Photos */}
             {(isEditing || !isOwner) ? (
@@ -982,7 +982,7 @@ export default function TripDetails({ params }: PageProps) {
                 </label>
                 <div className="flex flex-wrap gap-2 items-center">
                   {allTripImages.map((imgUrl, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
+                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
                       <img src={imgUrl} alt={`Trip photo ${idx + 1}`} className="w-full h-full object-cover" />
                       {idx === 0 && (
                         <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-indigo-500 text-[6px] font-bold text-white rounded uppercase tracking-wider">
@@ -1003,9 +1003,9 @@ export default function TripDetails({ params }: PageProps) {
                   ))}
 
                   <div className="flex gap-1.5">
-                    <label className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl cursor-pointer bg-slate-950/40 hover:bg-slate-950/60 transition-colors">
+                    <label className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 rounded-xl cursor-pointer bg-slate-100/40 dark:bg-slate-950/40 hover:bg-slate-200/40 dark:hover:bg-slate-950/60 transition-colors">
                       <Plus className="h-4 w-4 mb-0.5 text-indigo-400" />
-                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-400">Drive</span>
+                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Drive</span>
                       <input 
                         type="file" 
                         className="hidden" 
@@ -1032,10 +1032,10 @@ export default function TripDetails({ params }: PageProps) {
                     <button
                       type="button"
                       onClick={openCamera}
-                      className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 transition-colors cursor-pointer"
+                      className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 rounded-xl bg-slate-100/40 dark:bg-slate-950/40 hover:bg-slate-200/40 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
                     >
                       <Compass className="h-4 w-4 mb-0.5 text-indigo-400 animate-pulse" />
-                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-400">Selfie</span>
+                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Selfie</span>
                     </button>
                   </div>
                 </div>
@@ -1084,12 +1084,12 @@ export default function TripDetails({ params }: PageProps) {
             {/* AI Summary */}
             {currentTrip.ai_summary && (
               <>
-                <hr className="border-slate-900/60" />
+                <hr className="border-slate-200/60 dark:border-slate-900/60" />
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
                     AI Summary
                   </span>
-                  <p className="text-xs text-slate-400 leading-relaxed italic bg-slate-950/20 p-4 rounded-xl border border-slate-900/50">
+                  <p className="text-xs text-slate-650 dark:text-slate-400 leading-relaxed italic bg-slate-100/30 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-200 dark:border-slate-900/50">
                     &ldquo;{currentTrip.ai_summary}&rdquo;
                   </p>
                 </div>
@@ -1191,7 +1191,7 @@ export default function TripDetails({ params }: PageProps) {
                       )}
                   </div>
                   {day.itinerary_date && (
-                    <span className="text-xs text-slate-500 whitespace-nowrap self-start bg-slate-950 px-2.5 py-1 border border-slate-900 rounded-lg">
+                    <span className="text-xs text-slate-500 whitespace-nowrap self-start bg-slate-100 dark:bg-slate-950 px-2.5 py-1 border border-slate-200 dark:border-slate-900 rounded-lg">
                       {new Date(day.itinerary_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
                     </span>
                   )}
@@ -1366,7 +1366,7 @@ export default function TripDetails({ params }: PageProps) {
                                         setSelfieTarget({ type: 'activity', dayId: day.id, activityId: activity.id });
                                         openCamera();
                                       }}
-                                      className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-955/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
+                                      className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
                                     >
                                       <Compass className="h-3.5 w-3.5 mb-0.5 text-indigo-500 dark:text-indigo-400 animate-pulse" />
                                       <span className="text-[6px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Selfie</span>
@@ -1376,7 +1376,7 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
                             </div>
                           ) : (
-                            <Card className="p-4 sm:p-5 transition-all bg-slate-50/70 dark:bg-slate-955/40 hover:bg-slate-100/80 dark:hover:bg-slate-950/80 border border-slate-200 dark:border-slate-800/60 shadow-sm relative z-10">
+                            <Card className="p-4 sm:p-5 transition-all bg-white/60 dark:bg-slate-950/40 hover:bg-slate-50/80 dark:hover:bg-slate-950/80 border border-slate-200 dark:border-slate-800/60 shadow-sm relative z-10">
                               <div className="space-y-1 mb-2.5">
                                 <div className="flex flex-wrap gap-2 items-center">
                                   {activity.start_time && (
@@ -1573,11 +1573,11 @@ export default function TripDetails({ params }: PageProps) {
           }}
         >
           <div 
-            className="relative w-full max-w-5xl h-[80vh] bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
+            className="relative w-full max-w-5xl h-[80vh] bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Left side section: 15% width */}
-            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-800/80 bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
+            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-200 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
               {[...galleryImages].reverse().map((imgUrl, idx) => {
                 const isSelected = selectedGalleryImage === imgUrl;
                 return (
@@ -1586,7 +1586,7 @@ export default function TripDetails({ params }: PageProps) {
                     className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95 ${
                       isSelected 
                         ? 'border-2 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' 
-                        : 'border border-slate-800/80 hover:border-slate-700'
+                        : 'border border-slate-200 dark:border-slate-800/80 hover:border-slate-350 dark:hover:border-slate-700'
                     }`}
                     onClick={() => setSelectedGalleryImage(imgUrl)}
                   >
@@ -1597,7 +1597,7 @@ export default function TripDetails({ params }: PageProps) {
             </div>
 
             {/* Right side section: 85% width, with image fitting into 90% of it */}
-            <div className="flex-1 bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
+            <div className="flex-1 bg-slate-100/20 dark:bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
               <img 
                 src={selectedGalleryImage} 
                 alt="Selected gallery view" 
@@ -1608,7 +1608,7 @@ export default function TripDetails({ params }: PageProps) {
                   setGalleryImages(null);
                   setSelectedGalleryImage(null);
                 }}
-                className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+                className="absolute top-4 right-4 p-2 bg-white/80 dark:bg-slate-900/80 hover:bg-slate-100 dark:hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-white transition-all shadow-md cursor-pointer"
                 aria-label="Close gallery popup"
               >
                 <X className="h-5 w-5" />
@@ -1621,21 +1621,21 @@ export default function TripDetails({ params }: PageProps) {
       {/* Selfie Capture Modal */}
       {isCameraOpen && (
         <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-white flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-slate-900 dark:text-white flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
             <button 
               onClick={closeCamera} 
-              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 cursor-pointer"
+              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-400 cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">
+            <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2 text-slate-900 dark:text-white">
               <Compass className="h-5 w-5 text-indigo-400 animate-spin" />
               <span>Take a Selfie</span>
             </h3>
 
             {/* Video Feed / Capture Preview */}
-            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-200 dark:border-slate-800 flex items-center justify-center">
               {!capturedSelfie ? (
                 <>
                   <video
@@ -1708,7 +1708,7 @@ function PendingGenerationState({
       </div>
 
       <div className="space-y-2 max-w-sm">
-        <h3 className="text-lg font-bold text-white">Itinerary Not Generated Yet</h3>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white">Itinerary Not Generated Yet</h3>
         <p className="text-slate-400 text-sm leading-relaxed">
           This trip is saved as a <span className="text-amber-400 font-semibold capitalize">{status}</span> draft.
           The day-by-day AI itinerary will appear here after the OpenAI Edge Function generates it.

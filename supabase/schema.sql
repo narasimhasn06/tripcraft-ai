@@ -7,6 +7,18 @@ begin
 end;
 $$ language plpgsql;
 
+-- Create a helper function to get current user's email robustly
+create or replace function public.current_user_email()
+returns text
+language sql stable security definer
+set search_path = public
+as $$
+  select coalesce(
+    nullif(current_setting('request.jwt.claim.email', true), ''),
+    auth.jwt() ->> 'email'
+  )::text;
+$$;
+
 -- Create trips table
 create table if not exists trips (
   id uuid primary key default gen_random_uuid(),
@@ -36,9 +48,9 @@ create policy "Users can view their own trips."
   using (
     auth.uid() = user_id 
     or (
-      nullif(current_setting('request.jwt.claims', true), '') is not null
-      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
-      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
+      public.current_user_email() is not null 
+      and public.current_user_email() <> '' 
+      and notes ilike '%' || public.current_user_email() || '%'
     )
   );
 
@@ -51,17 +63,17 @@ create policy "Users can update their own trips."
   using (
     auth.uid() = user_id 
     or (
-      nullif(current_setting('request.jwt.claims', true), '') is not null
-      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
-      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
+      public.current_user_email() is not null 
+      and public.current_user_email() <> '' 
+      and notes ilike '%' || public.current_user_email() || '%'
     )
   )
   with check (
     auth.uid() = user_id 
     or (
-      nullif(current_setting('request.jwt.claims', true), '') is not null
-      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
-      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
+      public.current_user_email() is not null 
+      and public.current_user_email() <> '' 
+      and notes ilike '%' || public.current_user_email() || '%'
     )
   );
 
