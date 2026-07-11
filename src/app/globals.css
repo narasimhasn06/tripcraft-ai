@@ -35,3 +35,12 @@ body.dark {
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
+
+/* Hide native browser datepicker indicator on date inputs */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}

@@ -407,7 +407,15 @@ export default function NewTripPage() {
               required
               placeholder="YYYY-MM-DD"
               value={startDate}
-              onFocus={(e) => (e.target.type = "date")}
+              onClick={(e) => {
+                e.currentTarget.type = "date";
+                try {
+                  e.currentTarget.showPicker();
+                } catch (err) {}
+              }}
+              onDoubleClick={(e) => {
+                e.currentTarget.type = "text";
+              }}
               onBlur={(e) => {
                 if (!e.target.value) {
                   e.target.type = "text";
@@ -423,7 +431,15 @@ export default function NewTripPage() {
               required
               placeholder="YYYY-MM-DD"
               value={endDate}
-              onFocus={(e) => (e.target.type = "date")}
+              onClick={(e) => {
+                e.currentTarget.type = "date";
+                try {
+                  e.currentTarget.showPicker();
+                } catch (err) {}
+              }}
+              onDoubleClick={(e) => {
+                e.currentTarget.type = "text";
+              }}
               onBlur={(e) => {
                 if (!e.target.value) {
                   e.target.type = "text";
