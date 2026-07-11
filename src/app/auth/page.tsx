@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,22 +32,27 @@ const GoogleIcon = () => (
 );
 
 export default function AuthPage() {
-  const [view, setView] = useState<'signin' | 'signup' | 'forgot_password' | 'update_password'>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const v = params.get('view');
-      if (v === 'update_password') return 'update_password';
-    }
-    return 'signin';
-  });
+  const [view, setView] = useState<'signin' | 'signup' | 'forgot_password' | 'update_password'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   
   const { signIn, signUp, isConnected } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get('view');
+    if (v === 'update_password') {
+      const timer = setTimeout(() => {
+        setView('update_password');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,6 +84,10 @@ export default function AuthPage() {
     if (view === 'update_password') {
       if (!password || password.length < 6) {
         setError('Password must be at least 6 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
         return;
       }
       setLoading(true);
@@ -271,6 +280,20 @@ export default function AuthPage() {
                 disabled={loading}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                leftIcon={<Lock className="h-4 w-4" />}
+              />
+            )}
+
+            {view === 'update_password' && (
+              <Input
+                id="confirmPassword"
+                label="Confirm Password"
+                type="password"
+                required
+                disabled={loading}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 leftIcon={<Lock className="h-4 w-4" />}
               />
