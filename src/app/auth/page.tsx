@@ -180,6 +180,17 @@ export default function AuthPage() {
     <div className="flex-1 min-h-screen flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
       {/* Left Column: Auth form */}
       <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative overflow-hidden lg:w-1/2">
+        {/* Background responsive images (Light = Day, Dark = Night) */}
+        <img
+          src="/auth_left_light.jpg"
+          alt="Bora Bora Day"
+          className="absolute inset-0 w-full h-full object-cover opacity-25 dark:opacity-0 transition-opacity duration-300 pointer-events-none z-0"
+        />
+        <img
+          src="/auth_left_dark.jpg"
+          alt="Bora Bora Night"
+          className="absolute inset-0 w-full h-full object-cover opacity-0 dark:opacity-20 transition-opacity duration-300 pointer-events-none z-0"
+        />
         {/* Background neon glows */}
         <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl z-0" />
         <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl z-0" />
