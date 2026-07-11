@@ -139,13 +139,21 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors duration-300">
+    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors duration-300 relative overflow-hidden">
+      {/* Background travel image with light/dark adaptive opacities */}
+      <img
+        src="/travel_landing.jpg"
+        alt="Travel background"
+        className="absolute top-0 left-0 w-full h-[600px] object-cover opacity-20 dark:opacity-10 pointer-events-none z-0"
+      />
+      <div className="absolute top-0 left-0 w-full h-[600px] bg-gradient-to-b from-transparent via-slate-50 to-slate-50 dark:via-slate-950 dark:to-slate-950 pointer-events-none z-0" />
+
       {/* Navigation Header */}
       <header className="relative border-b border-slate-200 dark:border-slate-900 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between overflow-hidden">
         {/* Consistent travel-themed background design pattern */}
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-[0.04] pointer-events-none mix-blend-overlay z-0" 
-          style={{ backgroundImage: "url('/landing_travel_bg.png')" }} 
+          style={{ backgroundImage: "url('/travel_landing.jpg')" }} 
         />
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />

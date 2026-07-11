@@ -349,13 +349,10 @@ export default function AuthPage() {
 
               {(view === 'signin' || view === 'signup') && (
                 <>
-                  <div className="relative my-4">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-slate-200 dark:border-slate-800" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-50 dark:bg-slate-900 px-2 text-slate-500">Or continue with</span>
-                    </div>
+                  <div className="relative flex items-center my-5">
+                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800/80" />
+                    <span className="flex-shrink mx-4 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-wider">Or</span>
+                    <div className="flex-grow border-t border-slate-200 dark:border-slate-800/80" />
                   </div>
 
                   <Button

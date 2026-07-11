@@ -110,6 +110,12 @@ export default function NewTripPage() {
     const dayCount = Math.ceil(timeDiff / (1000 * 60 * 60 * 24)) + 1;
     if (dayCount > 7) {
       setError('This MVP version only supports trip durations up to 7 days.');
+      setTimeout(() => {
+        const endDateEl = document.getElementById('endDate') as HTMLInputElement | null;
+        if (endDateEl) {
+          endDateEl.focus();
+        }
+      }, 0);
       return;
     }
 
@@ -317,7 +323,7 @@ export default function NewTripPage() {
         {/* Consistent travel-themed background design pattern */}
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-[0.04] pointer-events-none mix-blend-overlay z-0" 
-          style={{ backgroundImage: "url('/landing_travel_bg.png')" }} 
+          style={{ backgroundImage: "url('/travel_landing.jpg')" }} 
         />
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
