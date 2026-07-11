@@ -92,8 +92,8 @@ export default function LandingPage() {
     <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden relative transition-colors duration-300">
       {/* Travel-related background image with light/dark adaptive opacities */}
       <img
-        src="/landing_travel_bg.png"
-        alt="Travel hot air balloons"
+        src="/travel_landing.jpg"
+        alt="Travel beach sunset walk"
         className="absolute top-0 left-0 w-full h-[800px] object-cover opacity-45 dark:opacity-15 mix-blend-normal pointer-events-none z-0"
       />
       <div className="absolute top-0 left-0 w-full h-[800px] bg-gradient-to-b from-transparent via-slate-50 to-slate-50 dark:via-slate-950 dark:to-slate-950 pointer-events-none z-0" />

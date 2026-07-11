@@ -553,7 +553,13 @@ export default function TripDetails({ params }: PageProps) {
         </div>
 
         {/* ── Right Content Area: Days & Activities ─────────────────────── */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="relative lg:col-span-2 space-y-6 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800/80 bg-white/30 dark:bg-slate-950/20 backdrop-blur-md overflow-hidden min-h-[500px]">
+          {/* Background image overlay */}
+          <div 
+            className="absolute inset-0 bg-cover bg-center opacity-20 dark:opacity-10 pointer-events-none z-0" 
+            style={{ backgroundImage: "url('/travel_itinerary.jpg')" }} 
+          />
+          <div className="relative z-10 space-y-6">
           
           {/* Demo Fallback Banner Warning */}
           {currentTrip.status === 'demo' && (
@@ -568,7 +574,7 @@ export default function TripDetails({ params }: PageProps) {
 
           {hasDays ? (
             currentTrip.itinerary_days.map((day) => (
-              <Card key={day.id} className="p-5 sm:p-6 border-slate-900/60 bg-slate-900/20">
+              <Card key={day.id} className="p-5 sm:p-6 border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/70 backdrop-blur-md shadow-md text-slate-900 dark:text-white">
                 
                 {/* Day Header/Editing */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-900/60 pb-4">
@@ -713,7 +719,7 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
                             </div>
                           ) : (
-                            <Card className={`p-4 sm:p-5 transition-all bg-slate-950/40 hover:bg-slate-950/80 border ${cardBorderColor}`}>
+                            <Card className="p-4 sm:p-5 transition-all bg-slate-50/70 dark:bg-slate-950/40 hover:bg-slate-100/80 dark:hover:bg-slate-950/80 border border-slate-200 dark:border-slate-800/60 shadow-sm relative z-10">
                               <div className="space-y-1 mb-2.5">
                                 <div className="flex flex-wrap gap-2 items-center">
                                   {activity.start_time && (
@@ -726,13 +732,13 @@ export default function TripDetails({ params }: PageProps) {
                                     <Badge variant={getCategoryBadgeVariant(activity.category)}>{activity.category}</Badge>
                                   )}
                                 </div>
-                                <h4 className="text-sm font-bold text-white group-hover/act:text-indigo-300 transition-colors">
+                                <h4 className="text-sm font-bold text-slate-900 dark:text-white group-hover/act:text-indigo-600 dark:group-hover/act:text-indigo-300 transition-colors">
                                   {aIdx + 1}. {activity.title}
                                 </h4>
                               </div>
 
                               {activity.description && (
-                                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">{activity.description}</p>
+                                <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">{activity.description}</p>
                               )}
 
                               <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 pt-3 border-t border-slate-900/60 text-[10px] text-slate-500 font-medium">
@@ -770,6 +776,7 @@ export default function TripDetails({ params }: PageProps) {
               status={currentTrip.status}
             />
           )}
+          </div>
         </div>
       </main>
     </div>

@@ -242,71 +242,81 @@ export default function Dashboard() {
                 >
                   <Card 
                     hoverable 
-                    className={`bg-gradient-to-br ${gradientStyles} p-6 flex flex-col justify-between min-h-[220px]`}
+                    className="relative overflow-hidden p-6 flex flex-col justify-between min-h-[220px] bg-slate-900/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80"
                   >
-                    <div>
-                      {/* Top Row: Location & Actions */}
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="text-white font-bold text-lg group-hover:text-indigo-300 transition-colors line-clamp-1">
-                            {trip.title || `${trip.destination} Trip`}
+                    {/* Background image overlay */}
+                    <div 
+                      className="absolute inset-0 bg-cover bg-center opacity-30 dark:opacity-20 z-0 group-hover:scale-105 transition-transform duration-500" 
+                      style={{ backgroundImage: "url('/travel_dashboard_card.jpg')" }} 
+                    />
+                    {/* Visual gradient overlay on top of the image to colorize it */}
+                    <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles} opacity-10 dark:opacity-20 z-0`} />
+
+                    <div className="relative z-10 flex-1 flex flex-col justify-between h-full">
+                      <div>
+                        {/* Top Row: Location & Actions */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div>
+                            <div className="text-slate-900 dark:text-white font-bold text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors line-clamp-1">
+                              {trip.title || `${trip.destination} Trip`}
+                            </div>
+                            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                              <MapPin className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                              <span className="truncate max-w-[150px]">{trip.destination}</span>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5 font-medium">
-                            <MapPin className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
-                            <span className="truncate max-w-[150px]">{trip.destination}</span>
+                          
+                          <button
+                            onClick={(e) => handleDelete(trip.id, e)}
+                            disabled={deletingId === trip.id}
+                            aria-label="Delete trip"
+                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-red-500/50 relative z-20"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+
+                        {/* Dates */}
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+                          <Calendar className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
+                          <span>
+                            {new Date(trip.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                            {' - '}
+                            {new Date(trip.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        </div>
+
+                        {/* Metadata tags */}
+                        <div className="flex flex-wrap gap-2 mt-4">
+                          <Badge variant="indigo" className="flex items-center gap-1">
+                            <Users className="h-2.5 w-2.5" />
+                            {trip.traveller_count} {trip.traveller_count === 1 ? 'Guest' : 'Guests'}
+                          </Badge>
+                          <Badge variant="emerald" className="flex items-center gap-1">
+                            <DollarSign className="h-2.5 w-2.5" />
+                            {trip.budget_level}
+                          </Badge>
+                          <Badge variant="cyan" className="flex items-center gap-1">
+                            <Activity className="h-2.5 w-2.5" />
+                            {trip.travel_pace}
+                          </Badge>
+                          <Badge variant={trip.status === 'draft' ? 'amber' : 'emerald'} className="flex items-center gap-1 capitalize">
+                            {trip.status}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Card Footer action indicator */}
+                      <div className="mt-6 flex items-center justify-end text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-1">
+                        {isConnected && (
+                          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 px-2 py-0.5 border border-emerald-500/10 rounded mr-auto">
+                            <Database className="h-3 w-3" />
+                            <span>DB Saved</span>
                           </div>
-                        </div>
-                        
-                        <button
-                          onClick={(e) => handleDelete(trip.id, e)}
-                          disabled={deletingId === trip.id}
-                          aria-label="Delete trip"
-                          className="p-1.5 text-slate-400 hover:text-red-400 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        )}
+                        <span>View Itinerary</span>
+                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
-
-                      {/* Dates */}
-                      <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-3 font-medium">
-                        <Calendar className="h-3.5 w-3.5 text-indigo-400" />
-                        <span>
-                          {new Date(trip.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                          {' - '}
-                          {new Date(trip.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </span>
-                      </div>
-
-                      {/* Metadata tags */}
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        <Badge variant="indigo" className="flex items-center gap-1">
-                          <Users className="h-2.5 w-2.5" />
-                          {trip.traveller_count} {trip.traveller_count === 1 ? 'Guest' : 'Guests'}
-                        </Badge>
-                        <Badge variant="emerald" className="flex items-center gap-1">
-                          <DollarSign className="h-2.5 w-2.5" />
-                          {trip.budget_level}
-                        </Badge>
-                        <Badge variant="cyan" className="flex items-center gap-1">
-                          <Activity className="h-2.5 w-2.5" />
-                          {trip.travel_pace}
-                        </Badge>
-                        <Badge variant={trip.status === 'draft' ? 'amber' : 'emerald'} className="flex items-center gap-1 capitalize">
-                          {trip.status}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {/* Card Footer action indicator */}
-                    <div className="mt-6 flex items-center justify-end text-xs font-semibold text-slate-350 group-hover:text-white transition-colors gap-1">
-                      {isConnected && (
-                        <div className="flex items-center gap-1 text-[10px] text-emerald-400 font-bold bg-emerald-500/5 px-2 py-0.5 border border-emerald-500/10 rounded mr-auto">
-                          <Database className="h-3 w-3" />
-                          <span>DB Saved</span>
-                        </div>
-                      )}
-                      <span>View Itinerary</span>
-                      <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </Card>
                 </Link>
