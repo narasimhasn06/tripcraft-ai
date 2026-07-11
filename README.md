@@ -70,9 +70,12 @@ TripCraft AI uses Supabase Auth for identity management.
 2. **Confirm Email settings (for quick testing)**:
    * For local testing or simple demo environments, toggle **Confirm email** OFF.
    * If enabled, users must click a confirmation link sent to their signup email before they can sign in.
-3. **Configure Redirect URLs**:
-   * Add `http://localhost:3000/auth/callback` to the Redirect URLs under **Authentication** -> **URL Configuration**.
-   * For production, add `https://your-app.vercel.app/auth/callback`.
+3. **Configure URL Configuration (Required for Production Redirects)**:
+   * Go to **Authentication** -> **URL Configuration** in the Supabase Dashboard.
+   * **Site URL**: Update this to your primary production domain (e.g., `https://tripcraft-ai-xi.vercel.app`). *If left as `http://localhost:3000`, Supabase will default to redirecting email verification links to localhost in production.*
+   * **Redirect URLs**:
+     * Add `http://localhost:3000/auth/callback` (for local development).
+     * Add `https://your-app.vercel.app/auth/callback` (for production, e.g., `https://tripcraft-ai-xi.vercel.app/auth/callback`).
 
 ---
 
