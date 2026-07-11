@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Compass, ArrowLeft, Sparkles, MapPin, Calendar, X, Trash2 } from 'lucide-react';
+import { Compass, ArrowLeft, Sparkles, MapPin, Calendar, X, Trash2, Plus } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
@@ -92,8 +92,10 @@ export default function NewTripPage() {
   const [travelPace, setTravelPace] = useState('balanced');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
+  const [tripImages, setTripImages] = useState<string[]>([]);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
   
   // UI & Loading States
   const [loading, setLoading] = useState(false);
@@ -116,6 +118,98 @@ export default function NewTripPage() {
     } else {
       setSelectedInterests([...selectedInterests, id]);
     }
+  };
+
+  const openCamera = async () => {
+    setIsCameraOpen(true);
+    setCapturedSelfie(null);
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+      });
+      setCameraStream(stream);
+    } catch (err) {
+      console.error('Camera access failed:', err);
+      setError('Could not access camera. Please check camera permissions.');
+      setIsCameraOpen(false);
+    }
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+    setCapturedSelfie(null);
+  };
+
+  const captureSelfie = () => {
+    const video = document.getElementById('selfie-video') as HTMLVideoElement;
+    if (!video) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85);
+      setCapturedSelfie(base64);
+    }
+  };
+
+  const saveSelfie = () => {
+    if (!capturedSelfie) return;
+    try {
+      const img = new Image();
+      img.src = capturedSelfie;
+      img.onload = () => {
+        const compCanvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        compCanvas.width = width;
+        compCanvas.height = height;
+        const compCtx = compCanvas.getContext('2d');
+        if (compCtx) {
+          compCtx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = compCanvas.toDataURL('image/jpeg', 0.7);
+          setTripImages(prev => [...prev, compressedBase64]);
+        }
+      };
+      closeCamera();
+    } catch (err) {
+      console.error('Failed to save captured selfie:', err);
+    }
+  };
+
+  const handleDriveUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    setError(null);
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      try {
+        const compressedBase64 = await compressImage(file);
+        setTripImages(prev => [...prev, compressedBase64]);
+      } catch (err) {
+        console.error('Failed to compress file:', err);
+      }
+    }
+    e.target.value = '';
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -168,9 +262,20 @@ export default function NewTripPage() {
     setError(null);
 
     try {
-      const formattedNotes = coverImage 
-        ? (notes.trim() ? `${notes.trim()}\n\n[cover_image]:# (${coverImage})` : `[cover_image]:# (${coverImage})`)
-        : (notes.trim() || null);
+      const primaryCover = tripImages[0] || null;
+      const listImages = tripImages.join('|||');
+
+      let formattedNotes = notes.trim() || null;
+      if (primaryCover) {
+        formattedNotes = formattedNotes 
+          ? `${formattedNotes}\n\n[cover_image]:# (${primaryCover})` 
+          : `[cover_image]:# (${primaryCover})`;
+      }
+      if (listImages) {
+        formattedNotes = formattedNotes
+          ? `${formattedNotes}\n\n[trip_images]:# (${listImages})`
+          : `[trip_images]:# (${listImages})`;
+      }
 
       if (isConnected && user) {
         let activeTripId = createdTripId;
@@ -581,41 +686,49 @@ export default function NewTripPage() {
             </div>
           </div>
 
-          {/* Cover Photo */}
-          <div className="space-y-2">
+          {/* Trip Photos */}
+          <div className="space-y-3">
             <label className="block text-xs font-semibold text-slate-300 tracking-wide">
-              Cover Photo (Optional)
+              Trip Photos (Optional - Select single/multiple or take onscreen selfie)
             </label>
-            {coverImage ? (
-              <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 shadow-inner group animate-in fade-in duration-200">
-                <img src={coverImage} alt="Cover preview" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+
+            <div className="flex flex-wrap gap-3 items-center">
+              {tripImages.map((imgUrl, idx) => (
+                <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
+                  <img src={imgUrl} alt={`Uploaded photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  {idx === 0 && (
+                    <span className="absolute bottom-1 left-1 px-1.5 py-0.5 bg-indigo-500 text-[8px] font-bold text-white rounded uppercase tracking-wider">
+                      Cover
+                    </span>
+                  )}
                   <button
                     type="button"
-                    onClick={() => setIsPickerModalOpen(true)}
-                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition-all"
+                    onClick={() => setTripImages(prev => prev.filter((_, i) => i !== idx))}
+                    className="absolute top-1 right-1 p-1 bg-red-650/90 hover:bg-red-700 text-white rounded-lg shadow-md transition-all focus:outline-none cursor-pointer"
                   >
-                    Change Image
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setCoverImage(null)}
-                    className="px-3 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded-lg font-bold text-xs shadow-md transition-all flex items-center gap-1"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                    <X className="h-3 w-3" />
                   </button>
                 </div>
+              ))}
+
+              {/* Add triggers */}
+              <div className="flex gap-2">
+                <label className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-800 hover:border-slate-750 rounded-xl cursor-pointer bg-slate-950/40 hover:bg-slate-950/60 transition-colors">
+                  <Plus className="h-5 w-5 mb-0.5 text-indigo-400" />
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Drive</span>
+                  <input type="file" className="hidden" accept="image/*" multiple onChange={handleDriveUpload} />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={openCamera}
+                  className="flex flex-col items-center justify-center w-20 h-20 border border-dashed border-slate-800 hover:border-slate-750 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 transition-colors cursor-pointer"
+                >
+                  <Compass className="h-5 w-5 mb-0.5 text-indigo-400 animate-pulse" />
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Selfie</span>
+                </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setIsPickerModalOpen(true)}
-                className="flex items-center gap-2 px-4 py-3 w-full bg-slate-950/60 border border-slate-800/80 hover:bg-slate-900/50 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold tracking-wide transition-all justify-center border-dashed"
-              >
-                <Compass className="h-4.5 w-4.5 text-indigo-400 animate-pulse" />
-                <span>Choose Cover Photo / Upload Image</span>
-              </button>
-            )}
+            </div>
           </div>
 
           {/* Notes */}
@@ -641,153 +754,75 @@ export default function NewTripPage() {
         </form>
       </main>
 
-      {/* Image Picker Modal */}
-      <ImagePickerModal
-        isOpen={isPickerModalOpen}
-        onClose={() => setIsPickerModalOpen(false)}
-        title="Select Trip Cover Photo"
-        currentImageUrl={coverImage}
-        onSelect={setCoverImage}
-      />
-    </div>
-  );
-}
+      {/* Selfie Capture Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-white flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={closeCamera} 
+              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-// ---------------------------------------------------------------------------
-// Image Picker Modal Component
-// ---------------------------------------------------------------------------
-interface ImagePickerModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  title: string;
-  currentImageUrl: string | null;
-  onSelect: (url: string | null) => void;
-}
+            <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">
+              <Compass className="h-5 w-5 text-indigo-400 animate-spin" />
+              <span>Take a Selfie</span>
+            </h3>
 
-function ImagePickerModal({ isOpen, onClose, title, currentImageUrl, onSelect }: ImagePickerModalProps) {
-  const [customUrl, setCustomUrl] = useState('');
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [compressing, setCompressing] = useState(false);
-
-  if (!isOpen) return null;
-
-  const PRESETS = [
-    { name: 'Tropical Beach', url: '/travel_landing.jpg' },
-    { name: 'Mountain Lake', url: '/travel_itinerary.jpg' },
-    { name: 'Travel Journal', url: '/travel_dashboard_card.jpg' },
-    { name: 'Resort Day', url: '/auth_left_light.jpg' },
-    { name: 'Resort Night', url: '/auth_left_dark.jpg' },
-    { name: 'Group Flight', url: '/auth_bg.jpg' }
-  ];
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadError(null);
-    setCompressing(true);
-    try {
-      const base64 = await compressImage(file);
-      onSelect(base64);
-      onClose();
-    } catch (err) {
-      setUploadError('Failed to compress and upload image.');
-    } finally {
-      setCompressing(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-white">
-        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-slate-400">
-          <X className="h-5 w-5" />
-        </button>
-
-        <h3 className="text-xl font-bold tracking-tight mb-4">{title}</h3>
-
-        {/* Current Preview */}
-        {currentImageUrl && (
-          <div className="mb-5 space-y-1.5">
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Current Image Preview</span>
-            <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-800">
-              <img src={currentImageUrl} alt="Preview" className="w-full h-full object-cover" />
-              <button 
-                type="button"
-                onClick={() => {
-                  onSelect(null);
-                  onClose();
-                }}
-                className="absolute top-2 right-2 px-2.5 py-1.5 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center gap-1 border border-red-500/25"
-              >
-                <Trash2 className="h-3.5 w-3.5" /> Remove Cover
-              </button>
+            {/* Video Feed / Capture Preview */}
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+              {!capturedSelfie ? (
+                <>
+                  <video
+                    id="selfie-video"
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover scale-x-[-1]"
+                    ref={(el) => {
+                      if (el && cameraStream && el.srcObject !== cameraStream) {
+                        el.srcObject = cameraStream;
+                      }
+                    }}
+                  />
+                  <div className="absolute inset-0 border-[3px] border-dashed border-indigo-500/30 rounded-full m-8 pointer-events-none" />
+                </>
+              ) : (
+                <img src={capturedSelfie} alt="Captured Selfie" className="w-full h-full object-cover" />
+              )}
             </div>
-          </div>
-        )}
 
-        <div className="space-y-4">
-          {/* Preset Grid */}
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-2">Select from Presets</span>
-            <div className="grid grid-cols-3 gap-2">
-              {PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => {
-                    onSelect(preset.url);
-                    onClose();
-                  }}
-                  className="group relative h-16 rounded-xl overflow-hidden border border-slate-850 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 transition-all text-left w-full"
+            {/* Controls */}
+            <div className="mt-6 flex gap-3 w-full">
+              {!capturedSelfie ? (
+                <Button
+                  onClick={captureSelfie}
+                  className="w-full py-2.5 flex justify-center items-center gap-1.5"
                 >
-                  <img src={preset.url} alt={preset.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                  <div className="absolute inset-0 bg-slate-950/40 flex items-end p-1">
-                    <span className="text-[9px] text-white font-semibold truncate w-full">{preset.name}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Local Upload */}
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-2">Or Upload a Photo</span>
-            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-slate-800 rounded-xl cursor-pointer hover:bg-slate-950/40 transition-colors">
-              <div className="flex flex-col items-center justify-center pt-3 pb-3">
-                <Compass className="h-6 w-6 text-slate-400 mb-1" />
-                <p className="text-xs text-slate-400"><span className="font-semibold text-indigo-400">Click to upload</span> (Auto-optimized)</p>
-              </div>
-              <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={compressing} />
-            </label>
-            {compressing && <p className="text-xs text-indigo-500 animate-pulse mt-1">Compressing image...</p>}
-            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
-          </div>
-
-          {/* Custom URL */}
-          <div>
-            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1.5">Or Paste Custom Image URL</span>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                placeholder="https://example.com/photo.jpg"
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-white"
-                value={customUrl}
-                onChange={(e) => setCustomUrl(e.target.value)}
-              />
-              <Button
-                onClick={() => {
-                  if (customUrl.trim()) {
-                    onSelect(customUrl.trim());
-                    onClose();
-                  }
-                }}
-              >
-                Apply Link
-              </Button>
+                  <Compass className="h-4 w-4" /> Snap Photo
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => setCapturedSelfie(null)}
+                    variant="outline"
+                    className="w-1/2 py-2.5"
+                  >
+                    Retake
+                  </Button>
+                  <Button
+                    onClick={saveSelfie}
+                    className="w-1/2 py-2.5"
+                  >
+                    Use Photo
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ import {
   ArrowLeft, Calendar, Users, DollarSign,
   Activity, MapPin, Trash2, Edit2,
   Save, AlertCircle, Sparkles, Clock, Database,
-  FileText, CheckCircle2, X, Compass
+  FileText, CheckCircle2, X, Compass, Plus
 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -137,6 +137,126 @@ export default function TripDetails({ params }: PageProps) {
   const [isPlanCoverModalOpen, setIsPlanCoverModalOpen] = useState(false);
   const [isDayCoverModalOpen, setIsDayCoverModalOpen] = useState(false);
   const [selectedDayForImage, setSelectedDayForImage] = useState<string | null>(null);
+
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+
+  // Camera & selfie state for details page
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+
+  // Parse notes clean vs formatted
+  const { text: cleanNotes, imageUrls: allTripImages } = (() => {
+    const notesContent = isEditing ? editableTrip?.notes : trip?.notes;
+    const { text: firstClean, imageUrl: cover } = extractImageAndText(notesContent, 'cover_image');
+    const regex = /\s*\[trip_images\]:# \((.*?)\)/;
+    const match = firstClean.match(regex);
+    const listImages = match ? match[1].split('|||') : [];
+    const finalClean = firstClean.replace(regex, '').trim();
+    return { text: finalClean, imageUrls: listImages.length > 0 ? listImages : (cover ? [cover] : []) };
+  })();
+
+  const openCamera = async () => {
+    setIsCameraOpen(true);
+    setCapturedSelfie(null);
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: 'user' }
+      });
+      setCameraStream(stream);
+    } catch (err) {
+      console.error('Camera access failed:', err);
+      setError('Could not access camera. Please check camera permissions.');
+      setIsCameraOpen(false);
+    }
+  };
+
+  const closeCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setIsCameraOpen(false);
+    setCapturedSelfie(null);
+  };
+
+  const captureSelfie = () => {
+    const video = document.getElementById('selfie-video') as HTMLVideoElement;
+    if (!video) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const base64 = canvas.toDataURL('image/jpeg', 0.85);
+      setCapturedSelfie(base64);
+    }
+  };
+
+  const saveSelfie = () => {
+    if (!capturedSelfie) return;
+    try {
+      const img = new Image();
+      img.src = capturedSelfie;
+      img.onload = () => {
+        const compCanvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 850;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        compCanvas.width = width;
+        compCanvas.height = height;
+        const compCtx = compCanvas.getContext('2d');
+        if (compCtx) {
+          compCtx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = compCanvas.toDataURL('image/jpeg', 0.7);
+          handleUpdateImages([...allTripImages, compressedBase64]);
+        }
+      };
+      closeCamera();
+    } catch (err) {
+      console.error('Failed to save captured selfie:', err);
+    }
+  };
+
+  const handleUpdateImages = (newImages: string[]) => {
+    const { text: cleanNotesText } = (() => {
+      const notesContent = editableTrip?.notes;
+      const { text: firstClean } = extractImageAndText(notesContent, 'cover_image');
+      const regex = /\s*\[trip_images\]:# \((.*?)\)/;
+      const finalClean = firstClean.replace(regex, '').trim();
+      return { text: finalClean };
+    })();
+    
+    const primaryCover = newImages[0] || null;
+    const listImages = newImages.join('|||');
+    
+    let updatedNotes = cleanNotesText || null;
+    if (primaryCover) {
+      updatedNotes = updatedNotes 
+        ? `${updatedNotes}\n\n[cover_image]:# (${primaryCover})` 
+        : `[cover_image]:# (${primaryCover})`;
+    }
+    if (listImages) {
+      updatedNotes = updatedNotes
+        ? `${updatedNotes}\n\n[trip_images]:# (${listImages})`
+        : `[trip_images]:# (${listImages})`;
+    }
+    handleUpdateTripField('notes', updatedNotes);
+  };
 
   // ---------------------------------------------------------------------------
   // Fetch Trip Data
@@ -373,7 +493,7 @@ export default function TripDetails({ params }: PageProps) {
   const currentTrip = isEditing ? editableTrip : trip;
   if (!currentTrip) return null;
 
-  const { text: cleanNotes, imageUrl: planCoverImage } = extractImageAndText(currentTrip.notes, 'cover_image');
+  const planCoverImage = allTripImages[0] || null;
   const hasDays = currentTrip.itinerary_days.length > 0;
 
   const handleSelectPlanCover = (url: string | null) => {
@@ -617,16 +737,126 @@ export default function TripDetails({ params }: PageProps) {
                   id="tripNotesInput"
                   rows={4}
                   className="bg-slate-950 border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all rounded-xl"
-                  value={currentTrip.notes || ''}
-                  onChange={(e) => handleUpdateTripField('notes', e.target.value || null)}
+                  value={cleanNotes || ''}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    const primaryCover = allTripImages[0] || null;
+                    const listImages = allTripImages.join('|||');
+                    let updatedNotes = text.trim() || null;
+                    if (primaryCover) {
+                      updatedNotes = updatedNotes 
+                        ? `${updatedNotes}\n\n[cover_image]:# (${primaryCover})` 
+                        : `[cover_image]:# (${primaryCover})`;
+                    }
+                    if (listImages) {
+                      updatedNotes = updatedNotes
+                        ? `${updatedNotes}\n\n[trip_images]:# (${listImages})`
+                        : `[trip_images]:# (${listImages})`;
+                    }
+                    handleUpdateTripField('notes', updatedNotes);
+                  }}
                   placeholder="e.g. Vegetarian diet, accessibility, quiet slots..."
                 />
               ) : (
                 <p className="text-xs text-slate-400 bg-slate-950/40 p-4 rounded-xl border border-slate-900 leading-relaxed min-h-[60px]">
-                  {currentTrip.notes || 'No custom notes provided.'}
+                  {cleanNotes || 'No custom notes provided.'}
                 </p>
               )}
             </div>
+
+            <hr className="border-slate-900/60" />
+
+            {/* Trip Photos */}
+            {isEditing ? (
+              <div className="space-y-3">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                  Trip Photos
+                </label>
+                <div className="flex flex-wrap gap-2 items-center">
+                  {allTripImages.map((imgUrl, idx) => (
+                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 group shadow-md animate-in zoom-in-95 duration-200">
+                      <img src={imgUrl} alt={`Trip photo ${idx + 1}`} className="w-full h-full object-cover" />
+                      {idx === 0 && (
+                        <span className="absolute bottom-1 left-1 px-1 py-0.5 bg-indigo-500 text-[6px] font-bold text-white rounded uppercase tracking-wider">
+                          Cover
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = allTripImages.filter((_, i) => i !== idx);
+                          handleUpdateImages(updated);
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-650/90 hover:bg-red-700 text-white rounded-lg shadow-md transition-all focus:outline-none cursor-pointer"
+                      >
+                        <X className="h-2.5 w-2.5" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex gap-1.5">
+                    <label className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl cursor-pointer bg-slate-950/40 hover:bg-slate-950/60 transition-colors">
+                      <Plus className="h-4 w-4 mb-0.5 text-indigo-400" />
+                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-400">Drive</span>
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/*" 
+                        multiple 
+                        onChange={async (e) => {
+                          const files = e.target.files;
+                          if (!files) return;
+                          const newImages = [...allTripImages];
+                          for (let i = 0; i < files.length; i++) {
+                            try {
+                              const base64 = await compressImage(files[i]);
+                              newImages.push(base64);
+                            } catch (err) {
+                              console.error(err);
+                            }
+                          }
+                          handleUpdateImages(newImages);
+                          e.target.value = '';
+                        }} 
+                      />
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={openCamera}
+                      className="flex flex-col items-center justify-center w-16 h-16 border border-dashed border-slate-800 hover:border-slate-700 rounded-xl bg-slate-950/40 hover:bg-slate-950/60 transition-colors cursor-pointer"
+                    >
+                      <Compass className="h-4 w-4 mb-0.5 text-indigo-400 animate-pulse" />
+                      <span className="text-[7px] font-bold uppercase tracking-wider text-slate-400">Selfie</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              allTripImages.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
+                    Trip Photos ({allTripImages.length})
+                  </span>
+                  <div className="grid grid-cols-4 gap-2">
+                    {allTripImages.map((imgUrl, idx) => (
+                      <div 
+                        key={idx} 
+                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-800/80 bg-slate-950/20 hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer"
+                        onClick={() => setZoomedImage(imgUrl)}
+                      >
+                        <img src={imgUrl} alt={`Trip photo ${idx + 1}`} className="w-full h-full object-cover" />
+                        {idx === 0 && (
+                          <div className="absolute inset-x-0 bottom-0 bg-slate-950/60 text-[8px] py-0.5 text-center text-slate-400 font-bold uppercase">
+                            Cover
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
 
             {/* AI Summary */}
             {currentTrip.ai_summary && (
@@ -918,6 +1148,102 @@ export default function TripDetails({ params }: PageProps) {
         }
         onSelect={handleSelectDayCover}
       />
+
+      {/* Lightbox Zoom Overlay Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-205"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-850 shadow-2xl animate-in zoom-in-95 duration-205"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={zoomedImage} 
+              alt="Zoomed view" 
+              className="w-full h-full object-contain max-h-[80vh] rounded-2xl" 
+            />
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+              aria-label="Close zoomed view"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Selfie Capture Modal */}
+      {isCameraOpen && (
+        <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-[110] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl relative text-white flex flex-col items-center animate-in fade-in zoom-in-95 duration-200">
+            <button 
+              onClick={closeCamera} 
+              className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-slate-400 cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">
+              <Compass className="h-5 w-5 text-indigo-400 animate-spin" />
+              <span>Take a Selfie</span>
+            </h3>
+
+            {/* Video Feed / Capture Preview */}
+            <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-slate-800 flex items-center justify-center">
+              {!capturedSelfie ? (
+                <>
+                  <video
+                    id="selfie-video"
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover scale-x-[-1]"
+                    ref={(el) => {
+                      if (el && cameraStream && el.srcObject !== cameraStream) {
+                        el.srcObject = cameraStream;
+                      }
+                    }}
+                  />
+                  <div className="absolute inset-0 border-[3px] border-dashed border-indigo-500/30 rounded-full m-8 pointer-events-none" />
+                </>
+              ) : (
+                <img src={capturedSelfie} alt="Captured Selfie" className="w-full h-full object-cover" />
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="mt-6 flex gap-3 w-full">
+              {!capturedSelfie ? (
+                <Button
+                  onClick={captureSelfie}
+                  className="w-full py-2.5 flex justify-center items-center gap-1.5"
+                >
+                  <Compass className="h-4 w-4" /> Snap Photo
+                </Button>
+              ) : (
+                <>
+                  <Button
+                    onClick={() => setCapturedSelfie(null)}
+                    variant="outline"
+                    className="w-1/2 py-2.5"
+                  >
+                    Retake
+                  </Button>
+                  <Button
+                    onClick={saveSelfie}
+                    className="w-1/2 py-2.5"
+                  >
+                    Use Photo
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
