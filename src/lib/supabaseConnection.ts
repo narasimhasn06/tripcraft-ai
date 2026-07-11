@@ -58,7 +58,7 @@ export function isSupabaseConfigured(): boolean {
 export function requireSupabaseConfigured(): void {
   if (!isSupabaseConfigured()) {
     throw new Error(
-      '[TripCraft AI] Supabase is not configured. ' +
+      '[togethr] Supabase is not configured. ' +
       'Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local ' +
       'to valid non-placeholder values and restart the dev server.'
     );

@@ -105,9 +105,9 @@ export default function LandingPage() {
 
       {/* Navigation Header */}
       <header className="max-w-7xl w-full mx-auto px-6 py-5 flex items-center justify-between z-50 border-b border-slate-200/50 dark:border-slate-900/50 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl sticky top-0">
-        <Link href="/" className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900 dark:text-white group" aria-label="TripCraft AI Home">
+        <Link href="/" className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-slate-900 dark:text-white group" aria-label="togethr Home">
           <Compass className="h-6.5 w-6.5 text-indigo-400 group-hover:rotate-45 transition-transform duration-350" />
-          <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+          <span>togethr</span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -147,7 +147,7 @@ export default function LandingPage() {
 
         {/* Brief product explanation */}
         <p className="text-slate-600 dark:text-slate-400 mt-6 text-base sm:text-lg max-w-2xl leading-relaxed">
-          TripCraft AI eliminates the fatigue of logistics. Simply describe your ideal vacation, choose your pace, and let our intelligence generate a detailed, edit-ready daily itinerary designed around you.
+          togethr eliminates the fatigue of logistics. Simply describe your ideal vacation, choose your pace, and let our intelligence generate a detailed, edit-ready daily itinerary designed around you.
         </p>
 
         {/* “Plan My Trip” CTA */}
@@ -302,7 +302,7 @@ export default function LandingPage() {
       <footer className="border-t border-slate-200 dark:border-slate-900 py-8 z-10 bg-slate-100/60 dark:bg-slate-950/60">
         <div className="max-w-7xl w-full mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div className="flex items-center gap-1">
-            <span>© 2026 TripCraft AI. Designed for serene travel planning.</span>
+            <span>© 2026 togethr. Designed for serene travel planning.</span>
           </div>
           <div className="flex items-center gap-4">
             <a href="#" className="hover:text-slate-700 dark:hover:text-slate-350 transition-colors">Terms</a>

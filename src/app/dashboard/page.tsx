@@ -57,7 +57,7 @@ export default function Dashboard() {
         setTrips(data || []);
       } else {
         // Fetch from mock localStorage
-        const storedTrips = localStorage.getItem('tripcraft_trips');
+        const storedTrips = localStorage.getItem('togethr_trips');
         if (storedTrips) {
           const parsedTrips = JSON.parse(storedTrips) as Trip[];
           setTrips(parsedTrips.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
@@ -101,11 +101,11 @@ export default function Dashboard() {
         setTrips(trips.filter(trip => trip.id !== id));
       } else {
         // Delete from mock localStorage
-        const storedTrips = localStorage.getItem('tripcraft_trips');
+        const storedTrips = localStorage.getItem('togethr_trips');
         if (storedTrips) {
           const parsedTrips = JSON.parse(storedTrips) as Trip[];
           const filtered = parsedTrips.filter(t => t.id !== id);
-          localStorage.setItem('tripcraft_trips', JSON.stringify(filtered));
+          localStorage.setItem('togethr_trips', JSON.stringify(filtered));
           setTrips(filtered);
         }
       }
@@ -150,9 +150,9 @@ export default function Dashboard() {
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
         
-        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="TripCraft AI Home">
+        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="togethr Home">
           <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
-          <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+          <span>togethr</span>
         </Link>
         
         <div className="relative flex items-center gap-3 z-10">

@@ -115,7 +115,7 @@ export default function TripDetails({ params }: PageProps) {
         setEditableTrip(JSON.parse(JSON.stringify(sorted)));
       } else {
         // ⚠️ DEV FALLBACK
-        const raw = localStorage.getItem('tripcraft_trips');
+        const raw = localStorage.getItem('togethr_trips');
         if (!raw) throw new Error('No local trips found.');
         const trips = JSON.parse(raw) as TripRow[];
         const found = trips.find(t => t.id === tripId);
@@ -233,12 +233,12 @@ export default function TripDetails({ params }: PageProps) {
         }
       } else {
         // ⚠️ DEV FALLBACK
-        const raw = localStorage.getItem('tripcraft_trips') ?? '[]';
+        const raw = localStorage.getItem('togethr_trips') ?? '[]';
         const trips = JSON.parse(raw) as TripRow[];
         const updated = trips.map(t => 
           t.id === tripId ? { ...t, title: updatedTrip.title, notes: updatedTrip.notes, status: newStatus } : t
         );
-        localStorage.setItem('tripcraft_trips', JSON.stringify(updated));
+        localStorage.setItem('togethr_trips', JSON.stringify(updated));
       }
 
       // Sync state and notify success
@@ -277,9 +277,9 @@ export default function TripDetails({ params }: PageProps) {
         router.push('/dashboard');
       } else {
         // ⚠️ DEV FALLBACK
-        const raw = localStorage.getItem('tripcraft_trips') ?? '[]';
+        const raw = localStorage.getItem('togethr_trips') ?? '[]';
         const trips = JSON.parse(raw) as TripRow[];
-        localStorage.setItem('tripcraft_trips', JSON.stringify(trips.filter(t => t.id !== tripId)));
+        localStorage.setItem('togethr_trips', JSON.stringify(trips.filter(t => t.id !== tripId)));
         router.push('/dashboard');
       }
     } catch (err) {
@@ -328,9 +328,9 @@ export default function TripDetails({ params }: PageProps) {
         {/* Subtle decorative glow */}
         <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
         
-        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="TripCraft AI Home">
+        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="togethr Home">
           <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
-          <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+          <span>togethr</span>
         </Link>
         
         <div className="relative flex items-center gap-3 z-10">

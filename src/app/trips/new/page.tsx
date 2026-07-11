@@ -192,10 +192,10 @@ export default function NewTripPage() {
             };
 
             if (!createdTripId) {
-              const existingTripsStr = localStorage.getItem('tripcraft_trips') || '[]';
+              const existingTripsStr = localStorage.getItem('togethr_trips') || '[]';
               const existingTrips = JSON.parse(existingTripsStr);
               existingTrips.push(newTrip);
-              localStorage.setItem('tripcraft_trips', JSON.stringify(existingTrips));
+              localStorage.setItem('togethr_trips', JSON.stringify(existingTrips));
               setCreatedTripId(newTrip.id);
             }
 
@@ -254,14 +254,14 @@ export default function NewTripPage() {
         router.push(`/trips/${createdTripId}`);
       } else {
         // Local fallback
-        const raw = localStorage.getItem('tripcraft_trips') || '[]';
+        const raw = localStorage.getItem('togethr_trips') || '[]';
         const trips = JSON.parse(raw) as TripRow[];
         const updated = trips.map((t: TripRow) =>
           t.id === createdTripId
             ? { ...t, title: demo.tripTitle, status: 'demo', ai_summary: demo.summary }
             : t
         );
-        localStorage.setItem('tripcraft_trips', JSON.stringify(updated));
+        localStorage.setItem('togethr_trips', JSON.stringify(updated));
         router.push(`/trips/${createdTripId}`);
       }
     } catch (err: unknown) {
@@ -324,7 +324,7 @@ export default function NewTripPage() {
         
         <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10">
           <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-350" />
-          <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+          <span>togethr</span>
         </Link>
         <div className="relative flex items-center gap-4 z-10">
           <ThemeToggle />

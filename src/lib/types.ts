@@ -1,5 +1,5 @@
 /**
- * TripCraft AI – Shared Database Types
+ * togethr – Shared Database Types
  *
  * These types reflect the relational Supabase schema:
  *   profiles → trips → itinerary_days → activities

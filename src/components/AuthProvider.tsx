@@ -94,7 +94,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       // 2. FALLBACK MOCK MODE
       const timer = setTimeout(() => {
         try {
-          const storedSession = localStorage.getItem('tripcraft_session');
+          const storedSession = localStorage.getItem('togethr_session');
           if (storedSession) {
             const parsed = JSON.parse(storedSession) as UserSession;
             setSession(parsed);
@@ -148,7 +148,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
         user: mockUser,
       };
 
-      localStorage.setItem('tripcraft_session', JSON.stringify(mockSession));
+      localStorage.setItem('togethr_session', JSON.stringify(mockSession));
       setSession(mockSession);
       setUser(mockUser);
     }
@@ -183,7 +183,7 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     if (isConnected) {
       await supabase.auth.signOut();
     } else {
-      localStorage.removeItem('tripcraft_session');
+      localStorage.removeItem('togethr_session');
       setSession(null);
       setUser(null);
     }

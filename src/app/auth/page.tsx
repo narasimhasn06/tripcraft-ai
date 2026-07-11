@@ -167,7 +167,7 @@ export default function AuthPage() {
       } else {
         // Mock login
         const mockUser = { id: 'google-user-id', email: 'googleuser@gmail.com' };
-        localStorage.setItem('tripcraft_session', JSON.stringify({ access_token: 'mock-google', user: mockUser }));
+        localStorage.setItem('togethr_session', JSON.stringify({ access_token: 'mock-google', user: mockUser }));
         window.location.href = '/dashboard';
       }
     } catch (err) {
@@ -190,7 +190,7 @@ export default function AuthPage() {
             <div className="flex items-center justify-between mb-4">
               <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white group">
                 <Compass className="h-8 w-8 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
-                <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+                <span>togethr</span>
               </Link>
               <ThemeToggle />
             </div>
@@ -377,7 +377,7 @@ export default function AuthPage() {
         <div className="absolute top-12 left-12 right-12 flex items-center justify-between z-20">
           <Link href="/" className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-lg">
             <Compass className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-            <span>TripCraft AI</span>
+            <span>togethr</span>
           </Link>
           <span className="text-xs uppercase bg-indigo-50 dark:bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-indigo-750 dark:text-indigo-200 border border-indigo-100 dark:border-white/10 font-semibold tracking-wider">
             Premium Travel
@@ -407,7 +407,7 @@ export default function AuthPage() {
               />
               <div className="space-y-0.5 flex-1">
                 <p className="text-[10px] italic text-slate-750 dark:text-slate-100 leading-normal">
-                  &ldquo;TripCraft AI planned my 10-day trip to Tokyo in seconds. The choice of restaurants and daily pacing was absolutely perfect!&rdquo;
+                  &ldquo;togethr planned my 10-day trip to Tokyo in seconds. The choice of restaurants and daily pacing was absolutely perfect!&rdquo;
                 </p>
                 <div className="flex items-center justify-between gap-4 pt-0.5">
                   <div>
