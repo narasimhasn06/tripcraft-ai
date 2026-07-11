@@ -11,7 +11,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { 
   Compass, Plus, Calendar, Users, DollarSign, Activity, 
-  Trash2, LogOut, ArrowRight, MapPin, Database, AlertTriangle 
+  Trash2, LogOut, ArrowRight, MapPin, Database, AlertTriangle, X 
 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
   const fetchTrips = useCallback(async () => {
     if (!user) return;
@@ -258,7 +259,7 @@ export default function Dashboard() {
                     {/* Background image overlay */}
                     <div 
                       className="absolute inset-0 bg-cover bg-center opacity-30 dark:opacity-20 z-0 group-hover:scale-105 transition-transform duration-500" 
-                      style={{ backgroundImage: `url('${coverImageUrl}')` }} 
+                      style={{ backgroundImage: "url('/travel_dashboard_card.jpg')" }} 
                     />
                     {/* Visual gradient overlay on top of the image to colorize it */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles} opacity-10 dark:opacity-20 z-0`} />
@@ -318,9 +319,25 @@ export default function Dashboard() {
                       </div>
 
                       {/* Card Footer action indicator */}
-                      <div className="mt-6 flex items-center justify-end text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-1">
-                        <span>View Itinerary</span>
-                        <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                      <div className="mt-6 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-1">
+                        {coverImageUrl !== '/travel_dashboard_card.jpg' ? (
+                          <img
+                            src={coverImageUrl}
+                            alt="Cover thumbnail"
+                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-800 shadow-md hover:scale-110 active:scale-95 transition-transform cursor-pointer relative z-20"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setZoomedImage(coverImageUrl);
+                            }}
+                          />
+                        ) : (
+                          <div />
+                        )}
+                        <div className="flex items-center gap-1">
+                          <span>View Itinerary</span>
+                          <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -330,6 +347,31 @@ export default function Dashboard() {
           </div>
         )}
       </main>
+      {/* Lightbox Zoom Overlay Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-205"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div 
+            className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-850 shadow-2xl animate-in zoom-in-95 duration-205"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img 
+              src={zoomedImage} 
+              alt="Zoomed cover view" 
+              className="w-full h-full object-contain max-h-[80vh] rounded-2xl" 
+            />
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+              aria-label="Close zoomed view"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
