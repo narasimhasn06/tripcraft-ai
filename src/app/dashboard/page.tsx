@@ -41,7 +41,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [fetchError, setFetchError] = useState<string | null>(null);
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
   const fetchTrips = useCallback(async () => {
     if (!user) return;
@@ -244,8 +245,14 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const gradientStyles = getGradient(trip.destination);
-              const coverImageMatch = trip.notes?.match(/\[cover_image\]:# \((.*?)\)/);
-              const coverImageUrl = coverImageMatch ? coverImageMatch[1] : '/travel_dashboard_card.jpg';
+              const allImages = (() => {
+                const imagesMatch = trip.notes?.match(/\[trip_images\]:# \((.*?)\)/);
+                if (imagesMatch) return imagesMatch[1].split('|||');
+                const coverImageMatch = trip.notes?.match(/\[cover_image\]:# \((.*?)\)/);
+                if (coverImageMatch) return [coverImageMatch[1]];
+                return [];
+              })();
+              const coverImageUrl = allImages[0] || '/travel_dashboard_card.jpg';
               return (
                 <Link
                   key={trip.id}
@@ -319,18 +326,38 @@ export default function Dashboard() {
                       </div>
 
                       {/* Card Footer action indicator */}
-                      <div className="mt-6 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-1">
-                        {coverImageUrl !== '/travel_dashboard_card.jpg' ? (
-                          <img
-                            src={coverImageUrl}
-                            alt="Cover thumbnail"
-                            className="w-12 h-12 object-cover rounded-lg border border-slate-200 dark:border-slate-800 shadow-md hover:scale-110 active:scale-95 transition-transform cursor-pointer relative z-20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setZoomedImage(coverImageUrl);
-                            }}
-                          />
+                      <div className="mt-6 flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-2">
+                        {allImages.length > 0 ? (
+                          <div className="flex items-center gap-1.5 relative z-20">
+                            {allImages.slice(0, 3).map((imgUrl, idx) => (
+                              <img
+                                key={idx}
+                                src={imgUrl}
+                                alt={`Thumbnail ${idx + 1}`}
+                                className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-108 active:scale-95 transition-transform cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setGalleryImages(allImages);
+                                  setSelectedGalleryImage(imgUrl);
+                                }}
+                              />
+                            ))}
+                            {allImages.length > 3 && (
+                              <button
+                                type="button"
+                                className="w-10 h-10 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:scale-108 cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setGalleryImages(allImages);
+                                  setSelectedGalleryImage(allImages[0]);
+                                }}
+                              >
+                                <span className="font-extrabold text-sm tracking-widest -mt-1 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400">...</span>
+                              </button>
+                            )}
+                          </div>
                         ) : (
                           <div />
                         )}
@@ -347,28 +374,57 @@ export default function Dashboard() {
           </div>
         )}
       </main>
-      {/* Lightbox Zoom Overlay Modal */}
-      {zoomedImage && (
+      {/* Dynamic Gallery Popup Window */}
+      {galleryImages && selectedGalleryImage && (
         <div 
-          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-205"
-          onClick={() => setZoomedImage(null)}
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => {
+            setGalleryImages(null);
+            setSelectedGalleryImage(null);
+          }}
         >
           <div 
-            className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-850 shadow-2xl animate-in zoom-in-95 duration-205"
+            className="relative w-full max-w-5xl h-[80vh] bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <img 
-              src={zoomedImage} 
-              alt="Zoomed cover view" 
-              className="w-full h-full object-contain max-h-[80vh] rounded-2xl" 
-            />
-            <button
-              onClick={() => setZoomedImage(null)}
-              className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
-              aria-label="Close zoomed view"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {/* Left side section: 15% width */}
+            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-800/80 bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
+              {[...galleryImages].reverse().map((imgUrl, idx) => {
+                const isSelected = selectedGalleryImage === imgUrl;
+                return (
+                  <div
+                    key={idx}
+                    className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                      isSelected 
+                        ? 'border-2 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' 
+                        : 'border border-slate-800/80 hover:border-slate-700'
+                    }`}
+                    onClick={() => setSelectedGalleryImage(imgUrl)}
+                  >
+                    <img src={imgUrl} alt={`Gallery thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right side section: 85% width */}
+            <div className="flex-1 bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
+              <img 
+                src={selectedGalleryImage} 
+                alt="Selected gallery view" 
+                className="max-h-full max-w-full object-contain rounded-xl shadow-lg" 
+              />
+              <button
+                onClick={() => {
+                  setGalleryImages(null);
+                  setSelectedGalleryImage(null);
+                }}
+                className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+                aria-label="Close gallery popup"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
