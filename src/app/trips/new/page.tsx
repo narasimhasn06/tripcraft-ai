@@ -88,6 +88,7 @@ export default function NewTripPage() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [travellerCount, setTravellerCount] = useState(1);
+  const [additionalTravelers, setAdditionalTravelers] = useState<{ name: string; email: string }[]>([]);
   const [budgetLevel, setBudgetLevel] = useState('moderate');
   const [travelPace, setTravelPace] = useState('balanced');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
@@ -96,6 +97,21 @@ export default function NewTripPage() {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+
+  // Resize additional travelers array dynamically
+  useEffect(() => {
+    const requiredCount = Math.max(0, travellerCount - 1);
+    setAdditionalTravelers((prev) => {
+      if (prev.length === requiredCount) return prev;
+      if (prev.length < requiredCount) {
+        const diff = requiredCount - prev.length;
+        const newItems = Array.from({ length: diff }, () => ({ name: '', email: '' }));
+        return [...prev, ...newItems];
+      } else {
+        return prev.slice(0, requiredCount);
+      }
+    });
+  }, [travellerCount]);
   
   // UI & Loading States
   const [loading, setLoading] = useState(false);
@@ -262,8 +278,21 @@ export default function NewTripPage() {
     setError(null);
 
     try {
+      // Validate additional traveler emails if provided
+      for (const t of additionalTravelers) {
+        if (t.email.trim()) {
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(t.email.trim())) {
+            throw new Error(`Please enter a valid email address for all travelers.`);
+          }
+        }
+      }
+
       const primaryCover = tripImages[0] || null;
       const listImages = tripImages.join('|||');
+
+      const validTravelers = additionalTravelers.filter(t => t.name.trim() || t.email.trim());
+      const travelerString = validTravelers.map(t => `${t.name.trim()}:${t.email.trim()}`).join('|||');
 
       let formattedNotes = notes.trim() || null;
       if (primaryCover) {
@@ -275,6 +304,11 @@ export default function NewTripPage() {
         formattedNotes = formattedNotes
           ? `${formattedNotes}\n\n[trip_images]:# (${listImages})`
           : `[trip_images]:# (${listImages})`;
+      }
+      if (travelerString) {
+        formattedNotes = formattedNotes
+          ? `${formattedNotes}\n\n[travelers]:# (${travelerString})`
+          : `[travelers]:# (${travelerString})`;
       }
 
       if (isConnected && user) {
@@ -632,6 +666,46 @@ export default function NewTripPage() {
               </span>
             </div>
           </div>
+
+          {travellerCount > 1 && (
+            <div className="space-y-4 p-4 bg-slate-950/20 border border-slate-800/85 rounded-2xl animate-in fade-in slide-in-from-top-3 duration-250">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Additional Travelers Info</h3>
+              <div className="space-y-3">
+                {additionalTravelers.map((traveler, index) => (
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end pb-3 border-b border-slate-900 last:border-b-0 last:pb-0">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Name</label>
+                      <input
+                        type="text"
+                        placeholder="Name"
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-white text-xs focus:outline-none transition-all"
+                        value={traveler.name}
+                        onChange={(e) => {
+                          const updated = [...additionalTravelers];
+                          updated[index] = { ...updated[index], name: e.target.value };
+                          setAdditionalTravelers(updated);
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Traveler #{index + 2} Email ID</label>
+                      <input
+                        type="email"
+                        placeholder="Email Address"
+                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3.5 py-2 text-white text-xs focus:outline-none transition-all"
+                        value={traveler.email}
+                        onChange={(e) => {
+                          const updated = [...additionalTravelers];
+                          updated[index] = { ...updated[index], email: e.target.value };
+                          setAdditionalTravelers(updated);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Budget & Pace Selection */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

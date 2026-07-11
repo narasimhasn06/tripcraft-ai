@@ -22,6 +22,7 @@ const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) =>
 
 interface Trip {
   id: string;
+  user_id?: string;
   title: string;
   destination: string;
   start_date: string;
@@ -49,11 +50,10 @@ export default function Dashboard() {
     setFetchError(null);
     try {
       if (isConnected) {
-        // Fetch only the authenticated user's trips from Supabase, newest first
+        // Fetch all trips accessible to this user (filtered by database RLS), newest first
         const { data, error } = await supabase
           .from('trips')
-          .select('id, title, destination, start_date, end_date, traveller_count, budget_level, travel_pace, interests, status, created_at, notes')
-          .eq('user_id', user.id)
+          .select('id, title, destination, start_date, end_date, traveller_count, budget_level, travel_pace, interests, status, created_at, notes, user_id')
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -63,7 +63,12 @@ export default function Dashboard() {
         const storedTrips = localStorage.getItem('togethr_trips');
         if (storedTrips) {
           const parsedTrips = JSON.parse(storedTrips) as Trip[];
-          setTrips(parsedTrips.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+          const userEmail = user?.email || 'local-user';
+          const visibleTrips = parsedTrips.filter(t => 
+            t.user_id === user?.id || 
+            (t.notes && t.notes.includes(userEmail))
+          );
+          setTrips(visibleTrips.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
         }
       }
     } catch (error) {
@@ -277,14 +282,20 @@ export default function Dashboard() {
                             </div>
                           </div>
                           
-                          <button
-                            onClick={(e) => handleDelete(trip.id, e)}
-                            disabled={deletingId === trip.id}
-                            aria-label="Delete trip"
-                            className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-red-500/50 relative z-20"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          {trip.user_id === user?.id ? (
+                            <button
+                              onClick={(e) => handleDelete(trip.id, e)}
+                              disabled={deletingId === trip.id}
+                              aria-label="Delete trip"
+                              className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all shrink-0 focus:outline-none focus:ring-2 focus:ring-red-500/50 relative z-20"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <Badge variant="indigo" className="bg-indigo-50/50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/50 text-[8px] tracking-wider py-0.5 px-1.5 rounded relative z-20 shadow-none font-bold uppercase shrink-0">
+                              Shared
+                            </Badge>
+                          )}
                         </div>
 
                         {/* Dates */}

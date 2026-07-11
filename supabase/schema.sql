@@ -33,7 +33,7 @@ alter table trips enable row level security;
 -- Set up Row-Level Security (RLS) policies
 create policy "Users can view their own trips."
   on trips for select
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id or notes like '%' || coalesce(auth.jwt() ->> 'email', '') || '%');
 
 create policy "Users can insert their own trips."
   on trips for insert
@@ -41,7 +41,8 @@ create policy "Users can insert their own trips."
 
 create policy "Users can update their own trips."
   on trips for update
-  using (auth.uid() = user_id);
+  using (auth.uid() = user_id or notes like '%' || coalesce(auth.jwt() ->> 'email', '') || '%')
+  with check (auth.uid() = user_id or notes like '%' || coalesce(auth.jwt() ->> 'email', '') || '%');
 
 create policy "Users can delete their own trips."
   on trips for delete

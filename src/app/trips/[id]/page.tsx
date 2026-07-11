@@ -355,38 +355,136 @@ export default function TripDetails({ params }: PageProps) {
   // ---------------------------------------------------------------------------
   // Edit Handlers
   // ---------------------------------------------------------------------------
-  const handleUpdateTripField = <K extends keyof TripRow>(field: K, value: TripRow[K]) => {
-    if (!editableTrip) return;
-    setEditableTrip({ ...editableTrip, [field]: value });
+  const handleUpdateTripField = async <K extends keyof TripRow>(field: K, value: TripRow[K]) => {
+    if (isEditing) {
+      if (!editableTrip) return;
+      setEditableTrip({ ...editableTrip, [field]: value });
+    } else {
+      if (!trip) return;
+      const updatedTrip = { ...trip, [field]: value };
+      setTrip(updatedTrip);
+      try {
+        if (isConnected) {
+          const { error } = await supabase
+            .from('trips')
+            .update({ [field]: value })
+            .eq('id', trip.id);
+          if (error) throw error;
+        } else {
+          const stored = localStorage.getItem('togethr_trips');
+          if (stored) {
+            const parsed = JSON.parse(stored) as TripRow[];
+            const updated = parsed.map(t => t.id === trip.id ? { ...t, [field]: value } : t);
+            localStorage.setItem('togethr_trips', JSON.stringify(updated));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save trip field directly:', err);
+      }
+    }
   };
 
-  const handleUpdateDayField = <K extends keyof ItineraryDayWithActivities>(
+  const handleUpdateDayField = async <K extends keyof ItineraryDayWithActivities>(
     dayId: string,
     field: K,
     value: ItineraryDayWithActivities[K]
   ) => {
-    if (!editableTrip) return;
-    const days = editableTrip.itinerary_days.map(d => 
-      d.id === dayId ? { ...d, [field]: value } : d
-    );
-    setEditableTrip({ ...editableTrip, itinerary_days: days });
+    if (isEditing) {
+      if (!editableTrip) return;
+      const days = editableTrip.itinerary_days.map(d => 
+        d.id === dayId ? { ...d, [field]: value } : d
+      );
+      setEditableTrip({ ...editableTrip, itinerary_days: days });
+    } else {
+      if (!trip) return;
+      const days = trip.itinerary_days.map(d => 
+        d.id === dayId ? { ...d, [field]: value } : d
+      );
+      const updatedTrip = { ...trip, itinerary_days: days };
+      setTrip(updatedTrip);
+      try {
+        if (isConnected) {
+          const { error } = await supabase
+            .from('itinerary_days')
+            .update({ [field]: value })
+            .eq('id', dayId);
+          if (error) throw error;
+        } else {
+          const stored = localStorage.getItem('togethr_trips');
+          if (stored) {
+            const parsed = JSON.parse(stored) as any[];
+            const updated = parsed.map(t => {
+              if (t.id !== trip.id) return t;
+              const newDays = (t.itinerary_days || []).map((d: any) => 
+                d.id === dayId ? { ...d, [field]: value } : d
+              );
+              return { ...t, itinerary_days: newDays };
+            });
+            localStorage.setItem('togethr_trips', JSON.stringify(updated));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save day field directly:', err);
+      }
+    }
   };
 
-  const handleUpdateActivityField = <K extends keyof ActivityRow>(
+  const handleUpdateActivityField = async <K extends keyof ActivityRow>(
     dayId: string,
     activityId: string,
     field: K,
     value: ActivityRow[K]
   ) => {
-    if (!editableTrip) return;
-    const days = editableTrip.itinerary_days.map(d => {
-      if (d.id !== dayId) return d;
-      const activities = d.activities.map(a => 
-        a.id === activityId ? { ...a, [field]: value } : a
-      );
-      return { ...d, activities };
-    });
-    setEditableTrip({ ...editableTrip, itinerary_days: days });
+    if (isEditing) {
+      if (!editableTrip) return;
+      const days = editableTrip.itinerary_days.map(d => {
+        if (d.id !== dayId) return d;
+        const activities = d.activities.map(a => 
+          a.id === activityId ? { ...a, [field]: value } : a
+        );
+        return { ...d, activities };
+      });
+      setEditableTrip({ ...editableTrip, itinerary_days: days });
+    } else {
+      if (!trip) return;
+      const days = trip.itinerary_days.map(d => {
+        if (d.id !== dayId) return d;
+        const activities = d.activities.map(a => 
+          a.id === activityId ? { ...a, [field]: value } : a
+        );
+        return { ...d, activities };
+      });
+      const updatedTrip = { ...trip, itinerary_days: days };
+      setTrip(updatedTrip);
+      try {
+        if (isConnected) {
+          const { error } = await supabase
+            .from('activities')
+            .update({ [field]: value })
+            .eq('id', activityId);
+          if (error) throw error;
+        } else {
+          const stored = localStorage.getItem('togethr_trips');
+          if (stored) {
+            const parsed = JSON.parse(stored) as any[];
+            const updated = parsed.map(t => {
+              if (t.id !== trip.id) return t;
+              const newDays = (t.itinerary_days || []).map((d: any) => {
+                if (d.id !== dayId) return d;
+                const newActivities = (d.activities || []).map((a: any) => 
+                  a.id === activityId ? { ...a, [field]: value } : a
+                );
+                return { ...d, activities: newActivities };
+              });
+              return { ...t, itinerary_days: newDays };
+            });
+            localStorage.setItem('togethr_trips', JSON.stringify(updated));
+          }
+        }
+      } catch (err) {
+        console.error('Failed to save activity field directly:', err);
+      }
+    }
   };
 
   // ---------------------------------------------------------------------------
@@ -525,6 +623,7 @@ export default function TripDetails({ params }: PageProps) {
 
   const currentTrip = isEditing ? editableTrip : trip;
   if (!currentTrip) return null;
+  const isOwner = currentTrip.user_id === user?.id || currentTrip.user_id === 'local-user';
 
   const planCoverImage = allTripImages[0] || null;
   const hasDays = currentTrip.itinerary_days.length > 0;
@@ -649,7 +748,7 @@ export default function TripDetails({ params }: PageProps) {
 
             {/* Action Buttons */}
             <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-              {hasDays && (
+              {isOwner && hasDays && (
                 isEditing ? (
                   <>
                     <Button
@@ -682,15 +781,17 @@ export default function TripDetails({ params }: PageProps) {
                   </Button>
                 )
               )}
-              <Button
-                onClick={handleDeleteTrip}
-                disabled={deleting}
-                variant="danger"
-                className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
-                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </Button>
+              {isOwner && (
+                <Button
+                  onClick={handleDeleteTrip}
+                  disabled={deleting}
+                  variant="danger"
+                  className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                  leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+                >
+                  {deleting ? 'Deleting...' : 'Delete'}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -800,7 +901,7 @@ export default function TripDetails({ params }: PageProps) {
             <hr className="border-slate-900/60" />
 
             {/* Trip Photos */}
-            {isEditing ? (
+            {(isEditing || !isOwner) ? (
               <div className="space-y-3">
                 <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                   Trip Photos
@@ -999,6 +1100,19 @@ export default function TripDetails({ params }: PageProps) {
                         <>
                           <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">{day.title}</h3>
                           {cleanSummary && <p className="text-slate-650 dark:text-slate-400 text-xs mt-1.5 leading-relaxed">{cleanSummary}</p>}
+                          {!isOwner && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedDayForImage(day.id);
+                                setIsDayCoverModalOpen(true);
+                              }}
+                              className="mt-3 flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/80 dark:bg-slate-950/80 hover:bg-slate-900 dark:hover:bg-slate-950 text-white rounded-xl border border-slate-700/50 shadow-sm transition-all font-bold text-xs"
+                            >
+                              <Compass className="h-3.5 w-3.5" />
+                              <span>{dayCoverImage ? 'Change Day Photo' : 'Upload Day Photo'}</span>
+                            </button>
+                          )}
                         </>
                       )}
                   </div>
@@ -1232,32 +1346,103 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
 
                               {/* Activity Level Photos Row */}
-                              {activityImages.length > 0 && (
+                              {(activityImages.length > 0 || !isOwner) && (
                                 <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-900/60">
+                                  {!isOwner && (
+                                    <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-2">Activity Photos</span>
+                                  )}
                                   <div className="flex flex-wrap gap-2 items-center">
-                                    {activityImages.slice(0, 3).map((imgUrl, imgIdx) => (
-                                      <div 
-                                        key={imgIdx} 
-                                        className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:scale-105 active:scale-95 transition-transform shadow-sm cursor-pointer"
-                                        onClick={() => {
-                                          setGalleryImages(activityImages);
-                                          setSelectedGalleryImage(imgUrl);
-                                        }}
-                                      >
-                                        <img src={imgUrl} alt={`Activity photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
-                                      </div>
-                                    ))}
-                                    {activityImages.length > 3 && (
-                                      <button
-                                        type="button"
-                                        className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:scale-105 cursor-pointer"
-                                        onClick={() => {
-                                          setGalleryImages(activityImages);
-                                          setSelectedGalleryImage(activityImages[0]);
-                                        }}
-                                      >
-                                        <span className="font-extrabold text-sm tracking-widest -mt-1 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400">...</span>
-                                      </button>
+                                    {isOwner ? (
+                                      <>
+                                        {activityImages.slice(0, 3).map((imgUrl, imgIdx) => (
+                                          <div 
+                                            key={imgIdx} 
+                                            className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:scale-105 active:scale-95 transition-transform shadow-sm cursor-pointer"
+                                            onClick={() => {
+                                              setGalleryImages(activityImages);
+                                              setSelectedGalleryImage(imgUrl);
+                                            }}
+                                          >
+                                            <img src={imgUrl} alt={`Activity photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                          </div>
+                                        ))}
+                                        {activityImages.length > 3 && (
+                                          <button
+                                            type="button"
+                                            className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:scale-105 cursor-pointer"
+                                            onClick={() => {
+                                              setGalleryImages(activityImages);
+                                              setSelectedGalleryImage(activityImages[0]);
+                                            }}
+                                          >
+                                            <span className="font-extrabold text-sm tracking-widest -mt-1 text-slate-550 dark:text-slate-400">...</span>
+                                          </button>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <>
+                                        {activityImages.map((imgUrl, imgIdx) => (
+                                          <div key={imgIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50 shadow-sm">
+                                            <img 
+                                              src={imgUrl} 
+                                              alt={`Activity photo ${imgIdx + 1}`} 
+                                              className="w-full h-full object-cover cursor-pointer" 
+                                              onClick={() => {
+                                                setGalleryImages(activityImages);
+                                                setSelectedGalleryImage(imgUrl);
+                                              }}
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                const updated = activityImages.filter((_, i) => i !== imgIdx);
+                                                handleUpdateActivityImages(day.id, activity.id, updated);
+                                              }}
+                                              className="absolute top-0.5 right-0.5 p-0.5 bg-red-650/90 hover:bg-red-700 text-white rounded shadow-md transition-all focus:outline-none cursor-pointer"
+                                            >
+                                              <X className="h-2 w-2" />
+                                            </button>
+                                          </div>
+                                        ))}
+                                        <div className="flex gap-1.5 ml-1">
+                                          <label className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 rounded-lg cursor-pointer bg-slate-50/50 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors">
+                                            <Plus className="h-3.5 w-3.5 mb-0.5 text-indigo-500 dark:text-indigo-400" />
+                                            <span className="text-[6px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Drive</span>
+                                            <input 
+                                              type="file" 
+                                              className="hidden" 
+                                              accept="image/*" 
+                                              multiple 
+                                              onChange={async (e) => {
+                                                const files = e.target.files;
+                                                if (!files) return;
+                                                const newImages = [...activityImages];
+                                                for (let i = 0; i < files.length; i++) {
+                                                  try {
+                                                    const base64 = await compressImage(files[i]);
+                                                    newImages.push(base64);
+                                                  } catch (err) {
+                                                    console.error(err);
+                                                  }
+                                                }
+                                                handleUpdateActivityImages(day.id, activity.id, newImages);
+                                                e.target.value = '';
+                                              }} 
+                                            />
+                                          </label>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setSelfieTarget({ type: 'activity', dayId: day.id, activityId: activity.id });
+                                              openCamera();
+                                            }}
+                                            className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
+                                          >
+                                            <Compass className="h-3.5 w-3.5 mb-0.5 text-indigo-500 dark:text-indigo-400 animate-pulse" />
+                                            <span className="text-[6px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Selfie</span>
+                                          </button>
+                                        </div>
+                                      </>
                                     )}
                                   </div>
                                 </div>
