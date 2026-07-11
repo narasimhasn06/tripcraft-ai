@@ -261,16 +261,8 @@ export default function Dashboard() {
                 >
                   <Card 
                     hoverable 
-                    className="relative overflow-hidden p-6 flex flex-col justify-between min-h-[220px] bg-slate-900/60 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80"
+                    className="relative overflow-hidden p-6 flex flex-col justify-between min-h-[220px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    {/* Background image overlay */}
-                    <div 
-                      className="absolute inset-0 bg-cover bg-center opacity-30 dark:opacity-20 z-0 group-hover:scale-105 transition-transform duration-500" 
-                      style={{ backgroundImage: "url('/travel_dashboard_card.jpg')" }} 
-                    />
-                    {/* Visual gradient overlay on top of the image to colorize it */}
-                    <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles} opacity-10 dark:opacity-20 z-0`} />
-
                     <div className="relative z-10 flex-1 flex flex-col justify-between h-full">
                       <div>
                         {/* Top Row: Location & Actions */}
@@ -279,7 +271,7 @@ export default function Dashboard() {
                             <div className="text-slate-900 dark:text-white font-bold text-lg group-hover:text-indigo-600 dark:group-hover:text-indigo-300 transition-colors line-clamp-1">
                               {trip.title || `${trip.destination} Trip`}
                             </div>
-                            <div className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">
+                            <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400 mt-0.5 font-medium">
                               <MapPin className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
                               <span className="truncate max-w-[150px]">{trip.destination}</span>
                             </div>
@@ -296,7 +288,7 @@ export default function Dashboard() {
                         </div>
 
                         {/* Dates */}
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-3 font-medium">
+                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 mt-3 font-medium">
                           <Calendar className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
                           <span>
                             {new Date(trip.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
