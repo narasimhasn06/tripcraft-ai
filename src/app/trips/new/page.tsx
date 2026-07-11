@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/AuthProvider';
 import { supabase } from '@/lib/supabaseClient';
@@ -18,6 +18,44 @@ const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) =>
 
 // Types from shared schema
 import type { TripRow } from '@/lib/types';
+
+const POPULAR_DESTINATIONS = [
+  'Tokyo, Japan',
+  'Kyoto, Japan',
+  'Osaka, Japan',
+  'Paris, France',
+  'London, United Kingdom',
+  'Rome, Italy',
+  'Florence, Italy',
+  'Venice, Italy',
+  'New York City, USA',
+  'San Francisco, USA',
+  'Los Angeles, USA',
+  'Honolulu, Hawaii, USA',
+  'Sydney, Australia',
+  'Melbourne, Australia',
+  'Singapore',
+  'Bangkok, Thailand',
+  'Phuket, Thailand',
+  'Bali, Indonesia',
+  'Seoul, South Korea',
+  'Barcelona, Spain',
+  'Madrid, Spain',
+  'Amsterdam, Netherlands',
+  'Berlin, Germany',
+  'Munich, Germany',
+  'Cape Town, South Africa',
+  'Dubai, United Arab Emirates',
+  'Cairo, Egypt',
+  'Mumbai, India',
+  'New Delhi, India',
+  'Taj Mahal, Agra, India',
+  'Rio de Janeiro, Brazil',
+  'Buenos Aires, Argentina',
+  'Vancouver, Canada',
+  'Toronto, Canada',
+  'Reykjavik, Iceland',
+];
 
 const INTEREST_OPTIONS = [
   { id: 'Culture', label: '🕌 Culture' },
@@ -112,7 +150,35 @@ export default function NewTripPage() {
       }
     });
   }, [travellerCount]);
-  
+  // Autocomplete Suggestions State
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Match input with popular destinations database
+  useEffect(() => {
+    const query = destination.trim().toLowerCase();
+    if (query.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+    const filtered = POPULAR_DESTINATIONS.filter(place => 
+      place.toLowerCase().includes(query)
+    );
+    setSuggestions(filtered);
+  }, [destination]);
+
+  // Click outside listener to auto-close suggestions dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   // UI & Loading States
   const [loading, setLoading] = useState(false);
   const [loadingStepIdx, setLoadingStepIdx] = useState(0);
@@ -575,16 +641,41 @@ export default function NewTripPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl">
           {/* Destination */}
-          <Input
-            id="destination"
-            label="Where do you want to go? *"
-            type="text"
-            required
-            value={destination}
-            onChange={(e) => setDestination(e.target.value)}
-            placeholder="e.g. Kyoto, Paris, Tokyo, London, Rome"
-            leftIcon={<MapPin className="h-4.5 w-4.5 text-slate-500" />}
-          />
+          <div className="relative" ref={dropdownRef}>
+            <Input
+              id="destination"
+              label="Where do you want to go? *"
+              type="text"
+              required
+              value={destination}
+              onChange={(e) => {
+                setDestination(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              placeholder="e.g. Kyoto, Paris, Tokyo, London, Rome"
+              leftIcon={<MapPin className="h-4.5 w-4.5 text-slate-500" />}
+              autoComplete="off"
+            />
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 left-0 right-0 mt-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md max-h-56 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                {suggestions.map((place, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      setDestination(place);
+                      setShowSuggestions(false);
+                    }}
+                    className="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-700 dark:text-slate-305 hover:text-indigo-650 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-indigo-600/25 border-b border-slate-100 dark:border-slate-900 last:border-b-0 transition-colors flex items-center gap-2"
+                  >
+                    <MapPin className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                    <span>{place}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
