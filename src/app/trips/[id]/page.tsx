@@ -1,0 +1,802 @@
+'use client';
+
+import React, { use, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/AuthProvider';
+import { supabase } from '@/lib/supabaseClient';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { LoadingState } from '@/components/ui/loading-state';
+import { Textarea } from '@/components/ui/textarea';
+import type { TripRow, ItineraryDayWithActivities, ActivityRow } from '@/lib/types';
+import {
+  ArrowLeft, Calendar, Users, DollarSign,
+  Activity, MapPin, Trash2, Edit2,
+  Save, AlertCircle, Sparkles, Clock, Database,
+  FileText, CheckCircle2, X, Compass
+} from 'lucide-react';
+import Link from 'next/link';
+
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+type TripWithDays = TripRow & { itinerary_days: ItineraryDayWithActivities[] };
+
+const getCategoryBorder = (category?: string | null) => {
+  if (!category) return 'border-slate-850';
+  const cats: Record<string, string> = {
+    Culture: 'hover:border-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.04)] border-slate-850',
+    Food: 'hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.04)] border-slate-850',
+    Nature: 'hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.04)] border-slate-850',
+    Adventure: 'hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.04)] border-slate-850',
+    Shopping: 'hover:border-purple-500/30 hover:shadow-[0_0_15px_rgba(168,85,247,0.04)] border-slate-850',
+    Nightlife: 'hover:border-rose-500/30 hover:shadow-[0_0_15px_rgba(244,63,94,0.04)] border-slate-850',
+    Family: 'hover:border-teal-500/30 hover:shadow-[0_0_15px_rgba(20,184,166,0.04)] border-slate-850',
+    Relaxation: 'hover:border-fuchsia-500/30 hover:shadow-[0_0_15px_rgba(217,70,239,0.04)] border-slate-850',
+  };
+  return cats[category] || 'border-slate-850';
+};
+
+const getCategoryBadgeVariant = (category?: string | null): 'indigo' | 'emerald' | 'cyan' | 'amber' | 'rose' | 'slate' => {
+  if (!category) return 'slate';
+  const mapping: Record<string, 'indigo' | 'emerald' | 'cyan' | 'amber' | 'rose' | 'slate'> = {
+    Culture: 'indigo',
+    Food: 'amber',
+    Nature: 'emerald',
+    Adventure: 'cyan',
+    Shopping: 'slate',
+    Nightlife: 'rose',
+    Family: 'cyan',
+    Relaxation: 'indigo',
+  };
+  return mapping[category] || 'slate';
+};
+
+export default function TripDetails({ params }: PageProps) {
+  const router = useRouter();
+  const { user, loading: authLoading, isConnected } = useAuth();
+
+  const resolvedParams = use(params);
+  const tripId = resolvedParams.id;
+
+  // Master data state
+  const [trip, setTrip] = useState<TripWithDays | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Edit Mode state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editableTrip, setEditableTrip] = useState<TripWithDays | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // Fetch Trip Data
+  // ---------------------------------------------------------------------------
+  const fetchTrip = useCallback(async () => {
+    if (!user || !tripId) return;
+    setError(null);
+    try {
+      if (isConnected) {
+        const { data, error: fetchErr } = await supabase
+          .from('trips')
+          .select(`
+            *,
+            itinerary_days (
+              *,
+              activities ( * )
+            )
+          `)
+          .eq('id', tripId)
+          .single();
+
+        if (fetchErr) throw fetchErr;
+        if (!data) throw new Error('Trip not found.');
+
+        // Sort days and activities by order fields
+        const sorted: TripWithDays = {
+          ...(data as TripRow),
+          itinerary_days: ((data as TripWithDays).itinerary_days ?? [])
+            .sort((a, b) => a.day_number - b.day_number)
+            .map(day => ({
+              ...day,
+              activities: (day.activities ?? []).sort((a, b) => a.sort_order - b.sort_order),
+            })),
+        };
+        setTrip(sorted);
+        setEditableTrip(JSON.parse(JSON.stringify(sorted)));
+      } else {
+        // ⚠️ DEV FALLBACK
+        const raw = localStorage.getItem('tripcraft_trips');
+        if (!raw) throw new Error('No local trips found.');
+        const trips = JSON.parse(raw) as TripRow[];
+        const found = trips.find(t => t.id === tripId);
+        if (!found) throw new Error('Trip not found in local storage.');
+        const sortedLocal: TripWithDays = { ...found, itinerary_days: [] };
+        setTrip(sortedLocal);
+        setEditableTrip(JSON.parse(JSON.stringify(sortedLocal)));
+      }
+    } catch (err) {
+      console.error('Error fetching trip:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load trip.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user, tripId, isConnected]);
+
+  useEffect(() => {
+    if (user && tripId) {
+      const t = setTimeout(() => fetchTrip(), 0);
+      return () => clearTimeout(t);
+    }
+  }, [user, tripId, fetchTrip]);
+
+  // ---------------------------------------------------------------------------
+  // Edit Handlers
+  // ---------------------------------------------------------------------------
+  const handleUpdateTripField = <K extends keyof TripRow>(field: K, value: TripRow[K]) => {
+    if (!editableTrip) return;
+    setEditableTrip({ ...editableTrip, [field]: value });
+  };
+
+  const handleUpdateDayField = <K extends keyof ItineraryDayWithActivities>(
+    dayId: string,
+    field: K,
+    value: ItineraryDayWithActivities[K]
+  ) => {
+    if (!editableTrip) return;
+    const days = editableTrip.itinerary_days.map(d => 
+      d.id === dayId ? { ...d, [field]: value } : d
+    );
+    setEditableTrip({ ...editableTrip, itinerary_days: days });
+  };
+
+  const handleUpdateActivityField = <K extends keyof ActivityRow>(
+    dayId: string,
+    activityId: string,
+    field: K,
+    value: ActivityRow[K]
+  ) => {
+    if (!editableTrip) return;
+    const days = editableTrip.itinerary_days.map(d => {
+      if (d.id !== dayId) return d;
+      const activities = d.activities.map(a => 
+        a.id === activityId ? { ...a, [field]: value } : a
+      );
+      return { ...d, activities };
+    });
+    setEditableTrip({ ...editableTrip, itinerary_days: days });
+  };
+
+  // ---------------------------------------------------------------------------
+  // Save Itinerary Changes
+  // ---------------------------------------------------------------------------
+  const handleSaveChanges = async () => {
+    if (!editableTrip || !trip) return;
+    setSaving(true);
+    setError(null);
+    setSaveSuccess(false);
+
+    try {
+      const newStatus = trip.status === 'demo' ? 'generated' : trip.status;
+      const updatedTrip = {
+        ...editableTrip,
+        status: newStatus
+      };
+
+      if (isConnected) {
+        // 1. Update trip title, notes and transition status if it was 'demo'
+        const { error: tripUpdateErr } = await supabase
+          .from('trips')
+          .update({
+            title: updatedTrip.title,
+            notes: updatedTrip.notes,
+            status: newStatus,
+          })
+          .eq('id', tripId);
+        if (tripUpdateErr) throw tripUpdateErr;
+
+        // 2. Update days and activities
+        for (const day of updatedTrip.itinerary_days) {
+          const { error: dayUpdateErr } = await supabase
+            .from('itinerary_days')
+            .update({
+              title: day.title,
+              summary: day.summary,
+            })
+            .eq('id', day.id);
+          if (dayUpdateErr) throw dayUpdateErr;
+
+          for (const activity of day.activities) {
+            const { error: actUpdateErr } = await supabase
+              .from('activities')
+              .update({
+                start_time: activity.start_time,
+                title: activity.title,
+                description: activity.description,
+                location: activity.location,
+                estimated_cost: activity.estimated_cost,
+                category: activity.category,
+                notes: activity.notes,
+              })
+              .eq('id', activity.id);
+            if (actUpdateErr) throw actUpdateErr;
+          }
+        }
+      } else {
+        // ⚠️ DEV FALLBACK
+        const raw = localStorage.getItem('tripcraft_trips') ?? '[]';
+        const trips = JSON.parse(raw) as TripRow[];
+        const updated = trips.map(t => 
+          t.id === tripId ? { ...t, title: updatedTrip.title, notes: updatedTrip.notes, status: newStatus } : t
+        );
+        localStorage.setItem('tripcraft_trips', JSON.stringify(updated));
+      }
+
+      // Sync state and notify success
+      setTrip(updatedTrip);
+      setEditableTrip(updatedTrip);
+      setIsEditing(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err: unknown) {
+      console.error('Error saving changes:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save changes.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelChanges = () => {
+    setEditableTrip(JSON.parse(JSON.stringify(trip)));
+    setIsEditing(false);
+    setError(null);
+  };
+
+  // ---------------------------------------------------------------------------
+  // Delete Trip
+  // ---------------------------------------------------------------------------
+  const handleDeleteTrip = async () => {
+    if (!confirm('Are you sure you want to delete this trip permanently? All generated days and activities will be lost.')) return;
+    setDeleting(true);
+    try {
+      if (isConnected) {
+        const { error: deleteErr } = await supabase
+          .from('trips')
+          .delete()
+          .eq('id', tripId);
+        if (deleteErr) throw deleteErr;
+        router.push('/dashboard');
+      } else {
+        // ⚠️ DEV FALLBACK
+        const raw = localStorage.getItem('tripcraft_trips') ?? '[]';
+        const trips = JSON.parse(raw) as TripRow[];
+        localStorage.setItem('tripcraft_trips', JSON.stringify(trips.filter(t => t.id !== tripId)));
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete trip.');
+      setDeleting(false);
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // Loading & Error states
+  // ---------------------------------------------------------------------------
+  if (authLoading || loading) {
+    return <LoadingState message="Loading itinerary details..." type="fullscreen" />;
+  }
+
+  if (error && !isEditing) {
+    return (
+      <div className="flex-1 flex flex-col justify-center items-center bg-slate-950 text-white px-4 min-h-screen">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+        <h3 className="text-xl font-bold text-white mb-2">Error Loading Trip</h3>
+        <p className="text-slate-400 text-sm text-center max-w-sm mb-6">
+          {error}
+        </p>
+        <Link href="/dashboard">
+          <Button variant="outline">Return to Dashboard</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const currentTrip = isEditing ? editableTrip : trip;
+  if (!currentTrip) return null;
+
+  const hasDays = currentTrip.itinerary_days.length > 0;
+
+  return (
+    <div className="flex-1 flex flex-col min-h-screen bg-slate-955 text-slate-100 pb-20">
+
+      {/* ── Header ─────────────────────────────────────────────────────── */}
+      <header className="border-b border-slate-900 bg-slate-900/10 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between">
+        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white group" aria-label="TripCraft AI Home">
+          <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
+          <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+        </Link>
+        
+        <div className="flex items-center gap-3">
+          {saveSuccess && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/15 text-emerald-450 text-[10px] uppercase font-bold rounded-lg tracking-wider animate-pulse">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              <span>Changes Saved</span>
+            </div>
+          )}
+          <span className="text-xs text-slate-400 hidden md:inline-block px-2.5 py-1 bg-slate-900 rounded-full border border-slate-850">
+            {user?.email}
+          </span>
+        </div>
+      </header>
+
+      {/* ── Hero Banner ────────────────────────────────────────────────── */}
+      <div className="relative w-full overflow-hidden bg-slate-900/40 border-b border-slate-900/60">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/3 to-transparent z-0" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href="/dashboard" className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors">
+                  <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
+                </Link>
+                <span className="text-slate-700 text-xs">/</span>
+                <Badge 
+                  variant={currentTrip.status === 'demo' ? 'amber' : currentTrip.status === 'draft' ? 'amber' : 'emerald'} 
+                  className="mb-0.5 capitalize font-semibold tracking-wider"
+                >
+                  {currentTrip.status === 'demo' ? 'Demo Itinerary' : currentTrip.status}
+                </Badge>
+              </div>
+              
+              {isEditing ? (
+                <div className="space-y-1.5 max-w-xl">
+                  <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Trip Title</label>
+                  <input
+                    type="text"
+                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-4 py-2.5 text-white font-extrabold text-lg sm:text-xl focus:outline-none transition-all"
+                    value={currentTrip.title}
+                    onChange={(e) => handleUpdateTripField('title', e.target.value)}
+                  />
+                </div>
+              ) : (
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
+                  {currentTrip.title}
+                </h1>
+              )}
+              
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-400 font-medium">
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-indigo-400 shrink-0" />
+                  <span className="text-slate-200 font-semibold">{currentTrip.destination}</span>
+                </span>
+                <span className="hidden sm:inline text-slate-700">•</span>
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4 text-slate-500 shrink-0" />
+                  <span>
+                    {new Date(currentTrip.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {' – '}
+                    {new Date(currentTrip.end_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </span>
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+              {hasDays && (
+                isEditing ? (
+                  <>
+                    <Button
+                      onClick={handleSaveChanges}
+                      disabled={saving}
+                      variant="primary"
+                      className="shadow-md shadow-indigo-650/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                      leftIcon={<Save className="h-3.5 w-3.5" />}
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                    <Button
+                      onClick={handleCancelChanges}
+                      disabled={saving}
+                      variant="outline"
+                      className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                      leftIcon={<X className="h-3.5 w-3.5" />}
+                    >
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    variant="secondary"
+                    className="shadow-md shadow-emerald-650/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                    leftIcon={<Edit2 className="h-3.5 w-3.5" />}
+                  >
+                    Edit Itinerary
+                  </Button>
+                )
+              )}
+              <Button
+                onClick={handleDeleteTrip}
+                disabled={deleting}
+                variant="danger"
+                className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Inline Editing Error Display */}
+      {error && isEditing && (
+        <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 mt-6">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl flex items-center gap-2">
+            <AlertCircle className="h-4.5 w-4.5" />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* ── Main Layout Grid ───────────────────────────────────────────── */}
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {/* ── Left Summary Panel ───────────────────────────────────────── */}
+        <div className="lg:col-span-1 space-y-5">
+          <Card className="p-6 space-y-5 sticky top-24 border-slate-900/60 bg-slate-900/20">
+            
+            {/* Specs Block */}
+            <div className="space-y-4">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Specifications</span>
+              
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
+                <span className="text-slate-450 flex items-center gap-1.5">
+                  <Users className="h-3.5 w-3.5" /> Travelers
+                </span>
+                <Badge variant="indigo" className="font-semibold">
+                  {currentTrip.traveller_count} {currentTrip.traveller_count === 1 ? 'Person' : 'People'}
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
+                <span className="text-slate-450 flex items-center gap-1.5">
+                  <DollarSign className="h-3.5 w-3.5" /> Budget
+                </span>
+                <Badge variant="emerald" className="capitalize font-semibold">{currentTrip.budget_level}</Badge>
+              </div>
+
+              <div className="flex items-center justify-between text-xs py-1.5">
+                <span className="text-slate-450 flex items-center gap-1.5">
+                  <Activity className="h-3.5 w-3.5" /> Travel Pace
+                </span>
+                <Badge variant="cyan" className="capitalize font-semibold">{currentTrip.travel_pace}</Badge>
+              </div>
+            </div>
+
+            <hr className="border-slate-900/60" />
+
+            {/* Interests */}
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2.5">Interests</span>
+              <div className="flex flex-wrap gap-1.5">
+                {currentTrip.interests.map((interest) => (
+                  <span
+                    key={interest}
+                    className="text-[10px] font-semibold text-slate-300 bg-slate-950 px-2.5 py-1 border border-slate-850 rounded-lg"
+                  >
+                    {interest}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <hr className="border-slate-900/60" />
+
+            {/* Editable Notes */}
+            <div>
+              <label htmlFor="tripNotesInput" className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                Special Notes / Requests
+              </label>
+              {isEditing ? (
+                <Textarea
+                  id="tripNotesInput"
+                  rows={4}
+                  className="bg-slate-950 border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all rounded-xl"
+                  value={currentTrip.notes || ''}
+                  onChange={(e) => handleUpdateTripField('notes', e.target.value || null)}
+                  placeholder="e.g. Vegetarian diet, accessibility, quiet slots..."
+                />
+              ) : (
+                <p className="text-xs text-slate-400 bg-slate-950/40 p-4 rounded-xl border border-slate-900 leading-relaxed min-h-[60px]">
+                  {currentTrip.notes || 'No custom notes provided.'}
+                </p>
+              )}
+            </div>
+
+            {/* AI Summary */}
+            {currentTrip.ai_summary && (
+              <>
+                <hr className="border-slate-900/60" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2">
+                    AI Summary
+                  </span>
+                  <p className="text-xs text-slate-400 leading-relaxed italic bg-slate-950/20 p-4 rounded-xl border border-slate-900/50">
+                    &ldquo;{currentTrip.ai_summary}&rdquo;
+                  </p>
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+
+        {/* ── Right Content Area: Days & Activities ─────────────────────── */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Demo Fallback Banner Warning */}
+          {currentTrip.status === 'demo' && (
+            <div className="p-4 bg-amber-500/5 border border-amber-500/15 text-amber-300 text-xs rounded-xl flex items-start gap-2.5">
+              <AlertCircle className="h-4.5 w-4.5 text-amber-400 shrink-0 mt-0.5" />
+              <div className="leading-relaxed">
+                <span className="font-bold block text-sm text-amber-200 mb-1">Demonstration Itinerary Loaded</span>
+                This itinerary was loaded as a high-quality demonstration because the AI generation service encountered a temporary timeout. You can review and customize any detail. Saving your changes will automatically promote this to your personal saved itinerary.
+              </div>
+            </div>
+          )}
+
+          {hasDays ? (
+            currentTrip.itinerary_days.map((day) => (
+              <Card key={day.id} className="p-5 sm:p-6 border-slate-900/60 bg-slate-900/20">
+                
+                {/* Day Header/Editing */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-900/60 pb-4">
+                  <div className="flex-1 space-y-2">
+                    <Badge variant="indigo" className="mb-1">Day {day.day_number}</Badge>
+                    {isEditing ? (
+                      <div className="space-y-3">
+                        <div>
+                          <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Day Title</label>
+                          <input
+                            type="text"
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white font-bold text-sm focus:outline-none transition-all"
+                            value={day.title}
+                            onChange={(e) => handleUpdateDayField(day.id, 'title', e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Day Focus Summary</label>
+                          <textarea
+                            className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                            rows={2}
+                            value={day.summary || ''}
+                            onChange={(e) => handleUpdateDayField(day.id, 'summary', e.target.value || null)}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-bold text-white tracking-tight">{day.title}</h3>
+                        {day.summary && <p className="text-slate-450 text-xs mt-1.5 leading-relaxed">{day.summary}</p>}
+                      </>
+                    )}
+                  </div>
+                  {day.itinerary_date && (
+                    <span className="text-xs text-slate-500 whitespace-nowrap self-start bg-slate-950 px-2.5 py-1 border border-slate-900 rounded-lg">
+                      {new Date(day.itinerary_date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                  )}
+                </div>
+
+                {/* Day Activities */}
+                {day.activities.length === 0 ? (
+                  <p className="text-slate-500 text-sm italic pt-4">No activities added for this day.</p>
+                ) : (
+                  <div className="relative pl-6 space-y-6 border-l border-slate-850 mt-4">
+                    {day.activities.map((activity, aIdx) => {
+                      const isMorning = activity.start_time ? activity.start_time < '12:00' : false;
+                      const isEvening = activity.start_time ? activity.start_time >= '17:00' : false;
+                      const badgeVariant = isMorning ? 'amber' : isEvening ? 'indigo' : 'emerald';
+                      const cardBorderColor = getCategoryBorder(activity.category);
+
+                      return (
+                        <div key={activity.id} className="relative group/act">
+                          {/* Timeline circle node */}
+                          <div className="absolute -left-[32.5px] top-2.5 w-3.5 h-3.5 rounded-full border-4 border-slate-955 bg-indigo-500 group-hover/act:scale-125 transition-transform" />
+
+                          {isEditing ? (
+                            <div className="space-y-4 bg-slate-950/60 p-4 border border-slate-900 hover:border-slate-800 rounded-xl transition-all">
+                              <div className="flex items-center justify-between border-b border-slate-900 pb-2">
+                                <span className="text-xs font-bold text-indigo-400">Activity #{aIdx + 1}</span>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Start Time (HH:MM)</label>
+                                  <input
+                                    type="time"
+                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    value={activity.start_time?.substring(0, 5) || ''}
+                                    onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'start_time', e.target.value ? `${e.target.value}:00` : null)}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Category</label>
+                                  <select
+                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    value={activity.category || ''}
+                                    onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'category', e.target.value || null)}
+                                  >
+                                    <option value="">Select Category</option>
+                                    <option value="Culture">🕌 Culture</option>
+                                    <option value="Food">🍜 Food</option>
+                                    <option value="Nature">🏔️ Nature</option>
+                                    <option value="Adventure">🪂 Adventure</option>
+                                    <option value="Shopping">🛍️ Shopping</option>
+                                    <option value="Nightlife">🍻 Nightlife</option>
+                                    <option value="Family">👶 Family</option>
+                                    <option value="Relaxation">💆 Relaxation</option>
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Activity Title</label>
+                                <input
+                                  type="text"
+                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs font-semibold focus:outline-none transition-all"
+                                  value={activity.title}
+                                  onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'title', e.target.value)}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Description</label>
+                                <textarea
+                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                  rows={2}
+                                  value={activity.description || ''}
+                                  onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'description', e.target.value || null)}
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Location</label>
+                                  <input
+                                    type="text"
+                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    value={activity.location || ''}
+                                    onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'location', e.target.value || null)}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Estimated Cost</label>
+                                  <input
+                                    type="text"
+                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    value={activity.estimated_cost || ''}
+                                    onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'estimated_cost', e.target.value || null)}
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Special Notes / Tips</label>
+                                <input
+                                  type="text"
+                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                  value={activity.notes || ''}
+                                  onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'notes', e.target.value || null)}
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <Card className={`p-4 sm:p-5 transition-all bg-slate-950/40 hover:bg-slate-950/80 border ${cardBorderColor}`}>
+                              <div className="space-y-1 mb-2.5">
+                                <div className="flex flex-wrap gap-2 items-center">
+                                  {activity.start_time && (
+                                    <Badge variant={badgeVariant} className="flex items-center gap-1.5 w-fit">
+                                      <Clock className="h-2.5 w-2.5" />
+                                      {activity.start_time.substring(0, 5)}
+                                    </Badge>
+                                  )}
+                                  {activity.category && (
+                                    <Badge variant={getCategoryBadgeVariant(activity.category)}>{activity.category}</Badge>
+                                  )}
+                                </div>
+                                <h4 className="text-sm font-bold text-white group-hover/act:text-indigo-300 transition-colors">
+                                  {aIdx + 1}. {activity.title}
+                                </h4>
+                              </div>
+
+                              {activity.description && (
+                                <p className="text-slate-400 text-xs sm:text-sm leading-relaxed">{activity.description}</p>
+                              )}
+
+                              <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 pt-3 border-t border-slate-900/60 text-[10px] text-slate-500 font-medium">
+                                {activity.location && (
+                                  <span className="flex items-center gap-1.5">
+                                    <MapPin className="h-3.5 w-3.5 text-indigo-400" />
+                                    <span>{activity.location}</span>
+                                  </span>
+                                )}
+                                {activity.estimated_cost && (
+                                  <span className="flex items-center gap-1.5">
+                                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
+                                    <span>Estimated Cost: <span className="text-emerald-450">{activity.estimated_cost}</span></span>
+                                  </span>
+                                )}
+                                {activity.notes && (
+                                  <span className="flex items-center gap-1.5 italic text-slate-500">
+                                    <FileText className="h-3.5 w-3.5 text-slate-600" />
+                                    <span>{activity.notes}</span>
+                                  </span>
+                                )}
+                              </div>
+                            </Card>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            ))
+          ) : (
+            <PendingGenerationState
+              isConnected={isConnected}
+              status={currentTrip.status}
+            />
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Static Pending State View Helper
+// ---------------------------------------------------------------------------
+function PendingGenerationState({
+  isConnected,
+  status,
+}: {
+  isConnected: boolean;
+  status: string;
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-6 border border-dashed border-indigo-500/25 rounded-2xl bg-indigo-500/3 text-center space-y-5">
+      <div className="p-4 bg-indigo-500/10 rounded-full border border-indigo-500/20">
+        <Sparkles className="h-10 w-10 text-indigo-400 animate-pulse" />
+      </div>
+
+      <div className="space-y-2 max-w-sm">
+        <h3 className="text-lg font-bold text-white">Itinerary Not Generated Yet</h3>
+        <p className="text-slate-400 text-sm leading-relaxed">
+          This trip is saved as a <span className="text-amber-400 font-semibold capitalize">{status}</span> draft.
+          The day-by-day AI itinerary will appear here after the OpenAI Edge Function generates it.
+        </p>
+      </div>
+
+      {isConnected ? (
+        <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold bg-emerald-500/5 px-4 py-2 rounded-xl border border-emerald-500/20">
+          <CheckCircle2 className="h-4 w-4 shrink-0" />
+          <span>Trip metadata saved to Supabase · Awaiting Edge Function</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2 text-amber-400 text-xs font-semibold bg-amber-500/5 px-4 py-2 rounded-xl border border-amber-500/20">
+          <Database className="h-4 w-4 shrink-0" />
+          <span>DEV FALLBACK: Trip stored locally · Configure Supabase to enable real generation</span>
+        </div>
+      )}
+    </div>
+  );
+}
