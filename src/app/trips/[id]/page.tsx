@@ -138,7 +138,8 @@ export default function TripDetails({ params }: PageProps) {
   const [isDayCoverModalOpen, setIsDayCoverModalOpen] = useState(false);
   const [selectedDayForImage, setSelectedDayForImage] = useState<string | null>(null);
 
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<string[] | null>(null);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
 
   // Camera & selfie state for details page
   const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -838,21 +839,36 @@ export default function TripDetails({ params }: PageProps) {
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
                     Trip Photos ({allTripImages.length})
                   </span>
-                  <div className="grid grid-cols-4 gap-2">
-                    {allTripImages.map((imgUrl, idx) => (
+                  <div className="flex flex-wrap gap-2.5 items-center">
+                    {allTripImages.slice(0, 3).map((imgUrl, idx) => (
                       <div 
                         key={idx} 
-                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-800/80 bg-slate-950/20 hover:scale-105 active:scale-95 transition-all shadow-sm cursor-pointer"
-                        onClick={() => setZoomedImage(imgUrl)}
+                        className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:scale-105 active:scale-95 transition-transform shadow-sm cursor-pointer"
+                        onClick={() => {
+                          setGalleryImages(allTripImages);
+                          setSelectedGalleryImage(imgUrl);
+                        }}
                       >
                         <img src={imgUrl} alt={`Trip photo ${idx + 1}`} className="w-full h-full object-cover" />
                         {idx === 0 && (
-                          <div className="absolute inset-x-0 bottom-0 bg-slate-950/60 text-[8px] py-0.5 text-center text-slate-400 font-bold uppercase">
+                          <div className="absolute inset-x-0 bottom-0 bg-slate-950/60 text-[7px] py-0.5 text-center text-slate-400 font-bold uppercase tracking-wider">
                             Cover
                           </div>
                         )}
                       </div>
                     ))}
+                    {allTripImages.length > 3 && (
+                      <button
+                        type="button"
+                        className="w-16 h-16 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:scale-105 cursor-pointer"
+                        onClick={() => {
+                          setGalleryImages(allTripImages);
+                          setSelectedGalleryImage(allTripImages[0]);
+                        }}
+                      >
+                        <span className="font-extrabold text-sm tracking-widest -mt-1 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400">...</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )
@@ -1149,28 +1165,57 @@ export default function TripDetails({ params }: PageProps) {
         onSelect={handleSelectDayCover}
       />
 
-      {/* Lightbox Zoom Overlay Modal */}
-      {zoomedImage && (
+      {/* Dynamic Gallery Popup Window */}
+      {galleryImages && selectedGalleryImage && (
         <div 
-          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-in fade-in duration-205"
-          onClick={() => setZoomedImage(null)}
+          className="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[110] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200"
+          onClick={() => {
+            setGalleryImages(null);
+            setSelectedGalleryImage(null);
+          }}
         >
           <div 
-            className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-850 shadow-2xl animate-in zoom-in-95 duration-205"
+            className="relative w-full max-w-5xl h-[80vh] bg-slate-900 border border-slate-850 rounded-2xl overflow-hidden flex shadow-2xl animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
-            <img 
-              src={zoomedImage} 
-              alt="Zoomed view" 
-              className="w-full h-full object-contain max-h-[80vh] rounded-2xl" 
-            />
-            <button
-              onClick={() => setZoomedImage(null)}
-              className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
-              aria-label="Close zoomed view"
-            >
-              <X className="h-5 w-5" />
-            </button>
+            {/* Left side section: 15% width */}
+            <div className="w-[15%] min-w-[70px] max-w-[150px] border-r border-slate-800/80 bg-slate-950/40 p-2 sm:p-3 overflow-y-auto flex flex-col gap-2 shrink-0">
+              {[...galleryImages].reverse().map((imgUrl, idx) => {
+                const isSelected = selectedGalleryImage === imgUrl;
+                return (
+                  <div
+                    key={idx}
+                    className={`relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-105 active:scale-95 ${
+                      isSelected 
+                        ? 'border-2 border-indigo-500 shadow-md ring-2 ring-indigo-500/20' 
+                        : 'border border-slate-800/80 hover:border-slate-700'
+                    }`}
+                    onClick={() => setSelectedGalleryImage(imgUrl)}
+                  >
+                    <img src={imgUrl} alt={`Gallery thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Right side section: 85% width, with image fitting into 90% of it */}
+            <div className="flex-1 bg-slate-950/20 p-4 sm:p-6 flex items-center justify-center relative">
+              <img 
+                src={selectedGalleryImage} 
+                alt="Selected gallery view" 
+                className="max-w-[90%] max-h-[90%] object-contain rounded-xl shadow-lg" 
+              />
+              <button
+                onClick={() => {
+                  setGalleryImages(null);
+                  setSelectedGalleryImage(null);
+                }}
+                className="absolute top-4 right-4 p-2 bg-slate-900/80 hover:bg-slate-950 hover:scale-105 rounded-full border border-slate-700 text-white transition-all shadow-md cursor-pointer"
+                aria-label="Close gallery popup"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
