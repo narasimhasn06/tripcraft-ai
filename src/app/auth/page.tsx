@@ -45,7 +45,17 @@ export default function AuthPage() {
         await signIn(email, password);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred during authentication.');
+      let errMsg = err instanceof Error ? err.message : 'An error occurred during authentication.';
+      const lowMsg = errMsg.toLowerCase();
+      if (
+        lowMsg.includes('rate limit') || 
+        lowMsg.includes('email limit') || 
+        lowMsg.includes('security purposes') || 
+        lowMsg.includes('otp_limit')
+      ) {
+        errMsg = 'Signup email rate limit exceeded. Please wait a few minutes, or use the pre-configured test account. Alternatively, toggle "Confirm email" OFF in your Supabase Auth Settings to bypass email confirmation.';
+      }
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
