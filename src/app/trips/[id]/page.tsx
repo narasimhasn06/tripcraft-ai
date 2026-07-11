@@ -11,7 +11,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { Textarea } from '@/components/ui/textarea';
 import type { TripRow, ItineraryDayWithActivities, ActivityRow } from '@/lib/types';
 import {
-  ArrowLeft, Calendar, Users, DollarSign,
+  ArrowLeft, Calendar, Users, DollarSign, Mail,
   Activity, MapPin, Trash2, Edit2,
   Save, AlertCircle, Sparkles, Clock, Database,
   FileText, CheckCircle2, X, Compass, Plus
@@ -45,6 +45,12 @@ const makeImageAndText = (text: string | null | undefined, imageUrl: string | nu
   const cleanedText = text ? text.replace(new RegExp(`\\s*\\[${imageTag}\\]:# \\((.*?)\\)`), '').trim() : '';
   if (!imageUrl) return cleanedText;
   return cleanedText ? `${cleanedText}\n\n[${imageTag}]:# (${imageUrl})` : `[${imageTag}]:# (${imageUrl})`;
+};
+
+const getTravelersString = (notesContent: string | null | undefined): string | null => {
+  if (!notesContent) return null;
+  const match = notesContent.match(/\[travelers\]:# \((.*?)\)/);
+  return match ? match[0] : null;
 };
 
 const compressImage = (file: File): Promise<string> => {
@@ -147,15 +153,41 @@ export default function TripDetails({ params }: PageProps) {
   const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
   const [selfieTarget, setSelfieTarget] = useState<{ type: 'trip' } | { type: 'activity'; dayId: string; activityId: string } | null>(null);
 
-  // Parse notes clean vs formatted
-  const { text: cleanNotes, imageUrls: allTripImages } = (() => {
+  // Parse notes clean vs formatted, including travelers list
+  const { text: cleanNotes, imageUrls: allTripImages, travelersList } = (() => {
     const notesContent = isEditing ? editableTrip?.notes : trip?.notes;
     const { text: firstClean, imageUrl: cover } = extractImageAndText(notesContent, 'cover_image');
-    const regex = /\s*\[trip_images\]:# \((.*?)\)/;
-    const match = firstClean.match(regex);
-    const listImages = match ? match[1].split('|||') : [];
-    const finalClean = firstClean.replace(regex, '').trim();
-    return { text: finalClean, imageUrls: listImages.length > 0 ? listImages : (cover ? [cover] : []) };
+    
+    // Extract trip_images
+    const imagesRegex = /\s*\[trip_images\]:# \((.*?)\)/;
+    const imagesMatch = firstClean.match(imagesRegex);
+    const listImages = imagesMatch ? imagesMatch[1].split('|||') : [];
+    let processedText = firstClean.replace(imagesRegex, '').trim();
+
+    // Extract travelers
+    const travelersRegex = /\s*\[travelers\]:# \((.*?)\)/;
+    const travelersMatch = processedText.match(travelersRegex);
+    const travelersRaw = travelersMatch ? travelersMatch[1] : '';
+    processedText = processedText.replace(travelersRegex, '').trim();
+
+    // Parse travelers list
+    const travelersList: { name: string; email: string }[] = [];
+    if (travelersRaw) {
+      travelersRaw.split('|||').forEach(pair => {
+        const parts = pair.split(':');
+        const name = parts[0] ? parts[0].trim() : '';
+        const email = parts[1] ? parts[1].trim() : '';
+        if (name || email) {
+          travelersList.push({ name, email });
+        }
+      });
+    }
+
+    return { 
+      text: processedText, 
+      imageUrls: listImages.length > 0 ? listImages : (cover ? [cover] : []),
+      travelersList 
+    };
   })();
 
   const openCamera = async () => {
@@ -267,15 +299,17 @@ export default function TripDetails({ params }: PageProps) {
 
   const handleUpdateImages = (newImages: string[]) => {
     const { text: cleanNotesText } = (() => {
-      const notesContent = editableTrip?.notes;
+      const notesContent = editableTrip?.notes || trip?.notes;
       const { text: firstClean } = extractImageAndText(notesContent, 'cover_image');
       const regex = /\s*\[trip_images\]:# \((.*?)\)/;
-      const finalClean = firstClean.replace(regex, '').trim();
+      const travelersRegex = /\s*\[travelers\]:# \((.*?)\)/;
+      const finalClean = firstClean.replace(regex, '').replace(travelersRegex, '').trim();
       return { text: finalClean };
     })();
     
     const primaryCover = newImages[0] || null;
     const listImages = newImages.join('|||');
+    const travelersTag = getTravelersString(editableTrip?.notes || trip?.notes);
     
     let updatedNotes = cleanNotesText || null;
     if (primaryCover) {
@@ -287,6 +321,11 @@ export default function TripDetails({ params }: PageProps) {
       updatedNotes = updatedNotes
         ? `${updatedNotes}\n\n[trip_images]:# (${listImages})`
         : `[trip_images]:# (${listImages})`;
+    }
+    if (travelersTag) {
+      updatedNotes = updatedNotes
+        ? `${updatedNotes}\n\n${travelersTag}`
+        : travelersTag;
     }
     handleUpdateTripField('notes', updatedNotes);
   };
@@ -629,8 +668,9 @@ export default function TripDetails({ params }: PageProps) {
   const hasDays = currentTrip.itinerary_days.length > 0;
 
   const handleSelectPlanCover = (url: string | null) => {
-    const updatedNotes = makeImageAndText(cleanNotes, url, 'cover_image');
-    handleUpdateTripField('notes', updatedNotes || null);
+    const remainingImages = allTripImages.slice(1);
+    const newImages = url ? [url, ...remainingImages] : remainingImages;
+    handleUpdateImages(newImages);
   };
 
   const handleSelectDayCover = (url: string | null) => {
@@ -859,6 +899,33 @@ export default function TripDetails({ params }: PageProps) {
               </div>
             </div>
 
+            {travelersList.length > 0 && (
+              <>
+                <hr className="border-slate-900/60" />
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-2.5">Travelers List</span>
+                  <div className="space-y-2">
+                    {travelersList.map((traveler, index) => (
+                      <div key={index} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-900">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-3.5 w-3.5 text-indigo-400 shrink-0" />
+                          <span className="text-xs font-bold text-slate-200 dark:text-slate-200">
+                            {traveler.name || `Traveler #${index + 2}`}
+                          </span>
+                        </div>
+                        {traveler.email && (
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-450 dark:text-slate-400 font-medium">
+                            <Mail className="h-3 w-3 text-indigo-400/80 shrink-0" />
+                            <span className="truncate max-w-[200px]">{traveler.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
             <hr className="border-slate-900/60" />
 
             {/* Editable Notes */}
@@ -876,6 +943,8 @@ export default function TripDetails({ params }: PageProps) {
                     const text = e.target.value;
                     const primaryCover = allTripImages[0] || null;
                     const listImages = allTripImages.join('|||');
+                    const travelersTag = getTravelersString(editableTrip?.notes || trip?.notes);
+                    
                     let updatedNotes = text.trim() || null;
                     if (primaryCover) {
                       updatedNotes = updatedNotes 
@@ -886,6 +955,11 @@ export default function TripDetails({ params }: PageProps) {
                       updatedNotes = updatedNotes
                         ? `${updatedNotes}\n\n[trip_images]:# (${listImages})`
                         : `[trip_images]:# (${listImages})`;
+                    }
+                    if (travelersTag) {
+                      updatedNotes = updatedNotes
+                        ? `${updatedNotes}\n\n${travelersTag}`
+                        : travelersTag;
                     }
                     handleUpdateTripField('notes', updatedNotes);
                   }}
