@@ -157,8 +157,9 @@ create policy "Users can select own trips"
   using (
     auth.uid() = user_id 
     or (
-      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+      nullif(current_setting('request.jwt.claims', true), '') is not null
+      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
     )
   );
 
@@ -173,15 +174,17 @@ create policy "Users can update own trips"
   using (
     auth.uid() = user_id 
     or (
-      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+      nullif(current_setting('request.jwt.claims', true), '') is not null
+      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
     )
   )
   with check (
     auth.uid() = user_id 
     or (
-      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+      nullif(current_setting('request.jwt.claims', true), '') is not null
+      and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+      and notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
     )
   );
 
@@ -201,8 +204,9 @@ create policy "Users can select own trip itinerary days"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -218,8 +222,9 @@ create policy "Users can insert own trip itinerary days"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -235,8 +240,9 @@ create policy "Users can update own trip itinerary days"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -248,8 +254,9 @@ create policy "Users can update own trip itinerary days"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -265,8 +272,9 @@ create policy "Users can delete own trip itinerary days"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -284,8 +292,9 @@ create policy "Users can select own trip activities"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -302,8 +311,9 @@ create policy "Users can insert own trip activities"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -320,8 +330,9 @@ create policy "Users can update own trip activities"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -334,8 +345,9 @@ create policy "Users can update own trip activities"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
@@ -352,8 +364,9 @@ create policy "Users can delete own trip activities"
       and (
         trips.user_id = auth.uid() 
         or (
-          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
-          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+          nullif(current_setting('request.jwt.claims', true), '') is not null
+          and (current_setting('request.jwt.claims', true)::json->>'email') is not null
+          and trips.notes ilike '%' || (current_setting('request.jwt.claims', true)::json->>'email') || '%'
         )
       )
     )
