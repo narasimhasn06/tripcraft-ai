@@ -10,6 +10,11 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Compass, ArrowLeft, Sparkles, MapPin, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
+  ssr: false,
+  loading: () => <div className="p-2 h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0" />
+});
 
 // Types from shared schema
 import type { TripRow } from '@/lib/types';
@@ -268,7 +273,7 @@ export default function NewTripPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 flex flex-col justify-center items-center bg-slate-950 text-white min-h-screen relative overflow-hidden px-4" role="status" aria-live="polite">
+      <div className="flex-1 flex flex-col justify-center items-center bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white min-h-screen relative overflow-hidden px-4" role="status" aria-live="polite">
         {/* Glowing backgrounds */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[80px]" />
@@ -290,7 +295,7 @@ export default function NewTripPage() {
             </div>
           </div>
 
-          <div className="w-full bg-slate-900 rounded-full h-1.5 border border-slate-880/80 overflow-hidden">
+          <div className="w-full bg-slate-900 rounded-full h-1.5 border border-slate-900/80 overflow-hidden">
             <div 
               className="bg-gradient-to-r from-indigo-500 to-emerald-500 h-1.5 rounded-full transition-all duration-1000"
               style={{ width: `${((loadingStepIdx + 1) / LOADING_STEPS.length) * 100}%` }}
@@ -306,19 +311,28 @@ export default function NewTripPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-slate-950 text-slate-100 pb-16">
+    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors duration-300">
       {/* Navigation Header */}
-      <header className="border-b border-slate-900 bg-slate-900/20 backdrop-blur-xl sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white group">
-          <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
+      <header className="relative border-b border-slate-200 dark:border-slate-900 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 px-6 py-4 flex items-center justify-between overflow-hidden">
+        {/* Consistent travel-themed background design pattern */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-[0.04] pointer-events-none mix-blend-overlay z-0" 
+          style={{ backgroundImage: "url('/landing_travel_bg.png')" }} 
+        />
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
+        
+        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10">
+          <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-350" />
           <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
         </Link>
-        <div className="flex items-center gap-4">
-          <span className="text-xs text-slate-400 hidden sm:inline-block px-2.5 py-1 bg-slate-900 rounded-full border border-slate-880">
+        <div className="relative flex items-center gap-4 z-10">
+          <ThemeToggle />
+          <span className="text-xs text-slate-600 dark:text-slate-400 hidden sm:inline-block px-2.5 py-1 bg-slate-100/90 dark:bg-slate-900/80 rounded-full border border-slate-200 dark:border-slate-900">
             {user?.email}
           </span>
           <Link href="/dashboard">
-            <Button size="sm" variant="outline" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
+            <Button size="sm" variant="outline" className="bg-white/80 dark:bg-slate-900/80" leftIcon={<ArrowLeft className="h-3.5 w-3.5" />}>
               Back to Dashboard
             </Button>
           </Link>
@@ -328,12 +342,12 @@ export default function NewTripPage() {
       {/* Form Container */}
       <main className="max-w-3xl w-full mx-auto px-4 sm:px-6 mt-10">
         <div className="mb-8">
-          <div className="inline-flex items-center gap-1.5 text-indigo-400 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-1.5 text-indigo-500 dark:text-indigo-400 text-xs font-semibold mb-2">
             <Sparkles className="h-3.5 w-3.5" />
             <span>{isConnected ? 'Supabase Database Mode' : 'Sandbox Fallback Mode'}</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Plan a new adventure</h1>
-          <p className="text-slate-400 mt-1 text-sm">
+          <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Plan a new adventure</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1 text-sm">
             Enter your travel coordinates below to generate an edit-ready daily trip itinerary.
           </p>
         </div>
@@ -371,7 +385,7 @@ export default function NewTripPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/40 backdrop-blur-md border border-slate-850 p-6 sm:p-8 rounded-2xl shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-8 bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 sm:p-8 rounded-2xl shadow-xl">
           {/* Destination */}
           <Input
             id="destination"
@@ -408,7 +422,7 @@ export default function NewTripPage() {
 
           {/* Traveller Count */}
           <div className="space-y-2">
-            <label htmlFor="travellers" className="block text-xs font-semibold text-slate-355 tracking-wide">
+            <label htmlFor="travellers" className="block text-xs font-semibold text-slate-300 tracking-wide">
               Number of Travelers * (Limit 1 - 20)
             </label>
             <div className="flex items-center gap-3">
@@ -419,7 +433,7 @@ export default function NewTripPage() {
               >
                 -
               </button>
-              <div className="w-16 h-10 flex items-center justify-center bg-slate-950/50 border border-slate-850 rounded-lg text-white font-semibold text-sm">
+              <div className="w-16 h-10 flex items-center justify-center bg-slate-950/50 border border-slate-800 rounded-lg text-white font-semibold text-sm">
                 {travellerCount}
               </div>
               <button
@@ -464,7 +478,7 @@ export default function NewTripPage() {
 
           {/* Interests */}
           <div className="space-y-3">
-            <label className="block text-xs font-semibold text-slate-355 tracking-wide">
+            <label className="block text-xs font-semibold text-slate-300 tracking-wide">
               Interests & Activities * (Select at least one)
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">

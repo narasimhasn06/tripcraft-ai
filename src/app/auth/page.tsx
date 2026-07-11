@@ -9,6 +9,11 @@ import { Compass, Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import dynamic from 'next/dynamic';
+const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
+  ssr: false,
+  loading: () => <div className="p-2 h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0" />
+});
 
 const GoogleIcon = () => (
   <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
@@ -172,185 +177,256 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative overflow-hidden bg-slate-950 min-h-screen">
-      {/* Background neon glows */}
-      <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl" />
+    <div className="flex-1 min-h-screen flex flex-col lg:flex-row bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      {/* Left Column: Auth form */}
+      <div className="flex-1 flex flex-col justify-center items-center px-4 sm:px-6 lg:px-8 py-12 relative overflow-hidden lg:w-1/2">
+        {/* Background neon glows */}
+        <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl z-0" />
+        <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl z-0" />
 
-      <div className="w-full max-w-md space-y-8 z-10">
-        {/* Header */}
-        <div className="text-center">
-          <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-white mb-4 group">
-            <Compass className="h-8 w-8 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
-            <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+        <div className="w-full max-w-md space-y-8 z-10">
+          {/* Header */}
+          <div className="text-center">
+            <div className="flex items-center justify-between mb-4">
+              <Link href="/" className="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-slate-900 dark:text-white group">
+                <Compass className="h-8 w-8 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
+                <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
+              </Link>
+              <ThemeToggle />
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+              {view === 'signup' && 'Create your account'}
+              {view === 'signin' && 'Sign in to your account'}
+              {view === 'forgot_password' && 'Reset your password'}
+              {view === 'update_password' && 'Set new password'}
+            </h2>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              {view === 'signin' && (
+                <>
+                  Don&apos;t have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setView('signup');
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                  >
+                    Sign Up
+                  </button>
+                </>
+              )}
+              {view === 'signup' && (
+                <>
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => {
+                      setView('signin');
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </>
+              )}
+              {view === 'forgot_password' && (
+                <>
+                  Remembered your password?{' '}
+                  <button
+                    onClick={() => {
+                      setView('signin');
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                  >
+                    Sign In
+                  </button>
+                </>
+              )}
+              {view === 'update_password' && 'Enter your new password below'}
+            </p>
+          </div>
+
+          {/* Card Component */}
+          <Card className="p-8 shadow-xl">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-sm rounded-xl">
+                  <AlertCircle className="h-4.5 w-4.5 shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              {message && (
+                <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-sm rounded-xl">
+                  <CheckCircle className="h-4.5 w-4.5 shrink-0" />
+                  <span>{message}</span>
+                </div>
+              )}
+
+              {view !== 'update_password' && (
+                <Input
+                  id="email"
+                  label="Email Address"
+                  type="email"
+                  required
+                  disabled={loading}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@example.com"
+                  leftIcon={<Mail className="h-4 w-4" />}
+                />
+              )}
+
+              {view !== 'forgot_password' && (
+                <Input
+                  id="password"
+                  label={view === 'update_password' ? 'New Password' : 'Password'}
+                  type="password"
+                  required
+                  disabled={loading}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  leftIcon={<Lock className="h-4 w-4" />}
+                />
+              )}
+
+              {view === 'update_password' && (
+                <Input
+                  id="confirmPassword"
+                  label="Confirm Password"
+                  type="password"
+                  required
+                  disabled={loading}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  leftIcon={<Lock className="h-4 w-4" />}
+                />
+              )}
+
+              {view === 'signin' && (
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setView('forgot_password');
+                      setError(null);
+                      setMessage(null);
+                    }}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline transition-colors"
+                  >
+                    Forgot Password?
+                  </button>
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                className="w-full py-3"
+                isLoading={loading}
+              >
+                {view === 'signin' && 'Sign In'}
+                {view === 'signup' && 'Create Account'}
+                {view === 'forgot_password' && 'Send Reset Link'}
+                {view === 'update_password' && 'Update Password'}
+              </Button>
+
+              {(view === 'signin' || view === 'signup') && (
+                <>
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-slate-200 dark:border-slate-800" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-slate-50 dark:bg-slate-900 px-2 text-slate-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGoogleSignIn}
+                    className="w-full py-3 hover:-translate-y-0.5 active:translate-y-0 transition-all border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900"
+                    isLoading={loading}
+                    leftIcon={<GoogleIcon />}
+                  >
+                    Continue with Google
+                  </Button>
+                </>
+              )}
+            </form>
+          </Card>
+        </div>
+      </div>
+
+      {/* Right Column: Visual Hero (Desktop only) */}
+      <div className="hidden lg:flex lg:w-1/2 relative bg-slate-100 dark:bg-slate-900 transition-colors duration-300 overflow-hidden">
+        {/* Full-bleed background image */}
+        <img
+          src="/auth_bg.jpg"
+          alt="Travel team members"
+          className="absolute inset-0 w-full h-full object-cover opacity-85 dark:opacity-40 transition-opacity duration-300"
+        />
+        {/* Abstract overlays */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-200/50 via-slate-100/10 to-transparent dark:from-slate-950 dark:via-slate-955/40 dark:to-transparent" />
+        <div className="absolute top-12 left-12 right-12 flex items-center justify-between z-20">
+          <Link href="/" className="flex items-center gap-2 text-slate-900 dark:text-white font-bold text-lg">
+            <Compass className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+            <span>TripCraft AI</span>
           </Link>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">
-            {view === 'signup' && 'Create your account'}
-            {view === 'signin' && 'Sign in to your account'}
-            {view === 'forgot_password' && 'Reset your password'}
-            {view === 'update_password' && 'Set new password'}
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            {view === 'signin' && (
-              <>
-                Don&apos;t have an account?{' '}
-                <button
-                  onClick={() => {
-                    setView('signup');
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"
-                >
-                  Sign Up
-                </button>
-              </>
-            )}
-            {view === 'signup' && (
-              <>
-                Already have an account?{' '}
-                <button
-                  onClick={() => {
-                    setView('signin');
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"
-                >
-                  Sign In
-                </button>
-              </>
-            )}
-            {view === 'forgot_password' && (
-              <>
-                Remembered your password?{' '}
-                <button
-                  onClick={() => {
-                    setView('signin');
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  className="font-medium text-indigo-400 hover:text-indigo-300 underline underline-offset-4 transition-colors"
-                >
-                  Sign In
-                </button>
-              </>
-            )}
-            {view === 'update_password' && 'Enter your new password below'}
-          </p>
+          <span className="text-xs uppercase bg-indigo-50 dark:bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-indigo-750 dark:text-indigo-200 border border-indigo-100 dark:border-white/10 font-semibold tracking-wider">
+            Premium Travel
+          </span>
         </div>
 
-        {/* Card Component */}
-        <Card className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl">
-                <AlertCircle className="h-4.5 w-4.5 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
+        {/* Hero typography and Testimonial Overlay Card inside a curved card floating at the bottom */}
+        <div className="absolute inset-x-0 bottom-4 z-20 flex justify-center px-4">
+          <div className="w-full max-w-4xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800/80 rounded-2xl p-5 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            
+            {/* Typography Section */}
+            <div className="flex-1 space-y-1.5 text-center md:text-left">
+              <h3 className="text-xl md:text-2xl font-extrabold text-slate-900 dark:text-white leading-tight">
+                Create stories, not itineraries.
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400 text-[11px] md:text-xs leading-relaxed max-w-lg">
+                Join thousands of travelers who craft daily bespoke experiences and discover hidden local gems with our AI planner.
+              </p>
+            </div>
 
-            {message && (
-              <div className="flex items-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm rounded-xl">
-                <CheckCircle className="h-4.5 w-4.5 shrink-0" />
-                <span>{message}</span>
-              </div>
-            )}
-
-            {view !== 'update_password' && (
-              <Input
-                id="email"
-                label="Email Address"
-                type="email"
-                required
-                disabled={loading}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                leftIcon={<Mail className="h-4 w-4" />}
+            {/* Testimonial Glass Card */}
+            <div className="w-full md:w-auto bg-slate-50/80 dark:bg-slate-950/40 border border-slate-200/40 dark:border-white/10 rounded-xl p-3 flex items-start gap-3 shrink-0 max-w-md">
+              <img
+                src="/traveler_avatar.png"
+                alt="Sarah Jenkins profile"
+                className="h-9 w-9 rounded-full object-cover border border-indigo-200 dark:border-indigo-400/50 shadow-sm shrink-0"
               />
-            )}
-
-            {view !== 'forgot_password' && (
-              <Input
-                id="password"
-                label={view === 'update_password' ? 'New Password' : 'Password'}
-                type="password"
-                required
-                disabled={loading}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                leftIcon={<Lock className="h-4 w-4" />}
-              />
-            )}
-
-            {view === 'update_password' && (
-              <Input
-                id="confirmPassword"
-                label="Confirm Password"
-                type="password"
-                required
-                disabled={loading}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                leftIcon={<Lock className="h-4 w-4" />}
-              />
-            )}
-
-            {view === 'signin' && (
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setView('forgot_password');
-                    setError(null);
-                    setMessage(null);
-                  }}
-                  className="text-xs text-indigo-400 hover:text-indigo-300 underline underline-offset-2 transition-colors"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
-
-            <Button
-              type="submit"
-              className="w-full py-3"
-              isLoading={loading}
-            >
-              {view === 'signin' && 'Sign In'}
-              {view === 'signup' && 'Create Account'}
-              {view === 'forgot_password' && 'Send Reset Link'}
-              {view === 'update_password' && 'Update Password'}
-            </Button>
-
-            {(view === 'signin' || view === 'signup') && (
-              <>
-                <div className="relative my-4">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-800" />
+              <div className="space-y-0.5 flex-1">
+                <p className="text-[10px] italic text-slate-750 dark:text-slate-100 leading-normal">
+                  &ldquo;TripCraft AI planned my 10-day trip to Tokyo in seconds. The choice of restaurants and daily pacing was absolutely perfect!&rdquo;
+                </p>
+                <div className="flex items-center justify-between gap-4 pt-0.5">
+                  <div>
+                    <h5 className="text-[9px] font-bold text-slate-900 dark:text-white">Sarah Jenkins</h5>
+                    <p className="text-[7px] text-slate-500 dark:text-slate-400">Globetrotter & Blogger</p>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-slate-900 px-2 text-slate-500">Or continue with</span>
+                  <div className="flex items-center gap-0.5 text-amber-500 dark:text-amber-400">
+                    {/* 5-star rating */}
+                    {[...Array(5)].map((_, i) => (
+                      <svg key={i} className="h-2.5 w-2.5 fill-current" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
                   </div>
                 </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleSignIn}
-                  className="w-full py-3 hover:-translate-y-0.5 active:translate-y-0 transition-all border-slate-800 hover:bg-slate-900"
-                  isLoading={loading}
-                  leftIcon={<GoogleIcon />}
-                >
-                  Continue with Google
-                </Button>
-              </>
-            )}
-          </form>
-        </Card>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

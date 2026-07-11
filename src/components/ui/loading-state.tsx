@@ -36,9 +36,9 @@ export function LoadingState({ message = 'Loading...', type = 'list' }: LoadingS
         <p className="text-slate-400 text-sm">{message}</p>
       </div>
       <div className="space-y-3">
-        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-850 animate-pulse w-full" />
-        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-850 animate-pulse w-5/6" />
-        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-850 animate-pulse w-4/5" />
+        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-800 animate-pulse w-full" />
+        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-800 animate-pulse w-5/6" />
+        <div className="h-10 bg-slate-900/40 rounded-xl border border-slate-800 animate-pulse w-4/5" />
       </div>
     </div>
   );

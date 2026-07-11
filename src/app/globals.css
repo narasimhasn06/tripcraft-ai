@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: var(--font-inter);
-  --color-slate-850: #1e293b; /* slate-800/slate-900 border color */
-  --color-slate-880: #0f172a; /* deep slate blue */
-  --color-slate-955: #030712; /* ultra dark slate */
-  --color-slate-355: #cbd5e1; /* slate-300 helper */
 }
 
 body {
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body.dark {
   background-color: #020617; /* slate-950 */
   color: #f1f5f9; /* slate-100 */
 }

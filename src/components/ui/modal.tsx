@@ -85,7 +85,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
         className="bg-slate-900 border border-slate-800 max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl relative z-10 animate-in fade-in zoom-in-95 duration-200"
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-850/50 flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-slate-800/50 flex items-center justify-between">
           <h3 id="modal-title" className="font-bold text-white text-base leading-none">
             {title}
           </h3>

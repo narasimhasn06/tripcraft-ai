@@ -17,6 +17,11 @@ import {
   FileText, CheckCircle2, X, Compass
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
+  ssr: false,
+  loading: () => <div className="p-2 h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0" />
+});
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -25,18 +30,18 @@ interface PageProps {
 type TripWithDays = TripRow & { itinerary_days: ItineraryDayWithActivities[] };
 
 const getCategoryBorder = (category?: string | null) => {
-  if (!category) return 'border-slate-850';
+  if (!category) return 'border-slate-800';
   const cats: Record<string, string> = {
-    Culture: 'hover:border-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.04)] border-slate-850',
-    Food: 'hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.04)] border-slate-850',
-    Nature: 'hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.04)] border-slate-850',
-    Adventure: 'hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.04)] border-slate-850',
-    Shopping: 'hover:border-purple-500/30 hover:shadow-[0_0_15px_rgba(168,85,247,0.04)] border-slate-850',
-    Nightlife: 'hover:border-rose-500/30 hover:shadow-[0_0_15px_rgba(244,63,94,0.04)] border-slate-850',
-    Family: 'hover:border-teal-500/30 hover:shadow-[0_0_15px_rgba(20,184,166,0.04)] border-slate-850',
-    Relaxation: 'hover:border-fuchsia-500/30 hover:shadow-[0_0_15px_rgba(217,70,239,0.04)] border-slate-850',
+    Culture: 'hover:border-indigo-500/30 hover:shadow-[0_0_15px_rgba(99,102,241,0.04)] border-slate-800',
+    Food: 'hover:border-amber-500/30 hover:shadow-[0_0_15px_rgba(245,158,11,0.04)] border-slate-800',
+    Nature: 'hover:border-emerald-500/30 hover:shadow-[0_0_15px_rgba(16,185,129,0.04)] border-slate-800',
+    Adventure: 'hover:border-cyan-500/30 hover:shadow-[0_0_15px_rgba(6,182,212,0.04)] border-slate-800',
+    Shopping: 'hover:border-purple-500/30 hover:shadow-[0_0_15px_rgba(168,85,247,0.04)] border-slate-800',
+    Nightlife: 'hover:border-rose-500/30 hover:shadow-[0_0_15px_rgba(244,63,94,0.04)] border-slate-800',
+    Family: 'hover:border-teal-500/30 hover:shadow-[0_0_15px_rgba(20,184,166,0.04)] border-slate-800',
+    Relaxation: 'hover:border-fuchsia-500/30 hover:shadow-[0_0_15px_rgba(217,70,239,0.04)] border-slate-800',
   };
-  return cats[category] || 'border-slate-850';
+  return cats[category] || 'border-slate-800';
 };
 
 const getCategoryBadgeVariant = (category?: string | null): 'indigo' | 'emerald' | 'cyan' | 'amber' | 'rose' | 'slate' => {
@@ -311,30 +316,39 @@ export default function TripDetails({ params }: PageProps) {
   const hasDays = currentTrip.itinerary_days.length > 0;
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-slate-955 text-slate-100 pb-20">
+    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 transition-colors duration-300 font-sans">
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
-      <header className="border-b border-slate-900 bg-slate-900/10 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white group" aria-label="TripCraft AI Home">
+      <header className="relative border-b border-slate-200 dark:border-slate-900 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between overflow-hidden">
+        {/* Consistent travel-themed background design pattern */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-[0.04] pointer-events-none mix-blend-overlay z-0" 
+          style={{ backgroundImage: "url('/landing_travel_bg.png')" }} 
+        />
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
+        
+        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="TripCraft AI Home">
           <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
           <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
         </Link>
         
-        <div className="flex items-center gap-3">
+        <div className="relative flex items-center gap-3 z-10">
           {saveSuccess && (
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/15 text-emerald-450 text-[10px] uppercase font-bold rounded-lg tracking-wider animate-pulse">
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/5 border border-emerald-500/15 text-emerald-400 text-[10px] uppercase font-bold rounded-lg tracking-wider animate-pulse">
               <CheckCircle2 className="h-3.5 w-3.5" />
               <span>Changes Saved</span>
             </div>
           )}
-          <span className="text-xs text-slate-400 hidden md:inline-block px-2.5 py-1 bg-slate-900 rounded-full border border-slate-850">
+          <ThemeToggle />
+          <span className="text-xs text-slate-600 dark:text-slate-400 hidden md:inline-block px-2.5 py-1 bg-slate-100/90 dark:bg-slate-900/80 rounded-full border border-slate-200 dark:border-slate-800">
             {user?.email}
           </span>
         </div>
       </header>
 
       {/* ── Hero Banner ────────────────────────────────────────────────── */}
-      <div className="relative w-full overflow-hidden bg-slate-900/40 border-b border-slate-900/60">
+      <div className="relative w-full overflow-hidden bg-white/50 dark:bg-slate-900/40 border-b border-slate-200 dark:border-slate-900/60">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-purple-500/3 to-transparent z-0" />
         <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
         
@@ -342,10 +356,10 @@ export default function TripDetails({ params }: PageProps) {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <Link href="/dashboard" className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold flex items-center gap-1 transition-colors">
+                <Link href="/dashboard" className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1 transition-colors">
                   <ArrowLeft className="h-3.5 w-3.5" /> Dashboard
                 </Link>
-                <span className="text-slate-700 text-xs">/</span>
+                <span className="text-slate-400 dark:text-slate-700 text-xs">/</span>
                 <Badge 
                   variant={currentTrip.status === 'demo' ? 'amber' : currentTrip.status === 'draft' ? 'amber' : 'emerald'} 
                   className="mb-0.5 capitalize font-semibold tracking-wider"
@@ -359,23 +373,23 @@ export default function TripDetails({ params }: PageProps) {
                   <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Trip Title</label>
                   <input
                     type="text"
-                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-4 py-2.5 text-white font-extrabold text-lg sm:text-xl focus:outline-none transition-all"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 rounded-xl px-4 py-2.5 text-slate-900 dark:text-white font-extrabold text-lg sm:text-xl focus:outline-none transition-all"
                     value={currentTrip.title}
                     onChange={(e) => handleUpdateTripField('title', e.target.value)}
                   />
                 </div>
               ) : (
-                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight max-w-3xl">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight max-w-3xl">
                   {currentTrip.title}
                 </h1>
               )}
               
-              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-400 font-medium">
+              <div className="flex flex-wrap items-center gap-y-2 gap-x-4 text-sm text-slate-500 dark:text-slate-400 font-medium">
                 <span className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-indigo-400 shrink-0" />
-                  <span className="text-slate-200 font-semibold">{currentTrip.destination}</span>
+                  <MapPin className="h-4 w-4 text-indigo-500 dark:text-indigo-400 shrink-0" />
+                  <span className="text-slate-750 dark:text-slate-200 font-semibold">{currentTrip.destination}</span>
                 </span>
-                <span className="hidden sm:inline text-slate-700">•</span>
+                <span className="hidden sm:inline text-slate-300 dark:text-slate-700">•</span>
                 <span className="flex items-center gap-1.5">
                   <Calendar className="h-4 w-4 text-slate-500 shrink-0" />
                   <span>
@@ -396,7 +410,7 @@ export default function TripDetails({ params }: PageProps) {
                       onClick={handleSaveChanges}
                       disabled={saving}
                       variant="primary"
-                      className="shadow-md shadow-indigo-650/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                      className="shadow-md shadow-indigo-600/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
                       leftIcon={<Save className="h-3.5 w-3.5" />}
                     >
                       {saving ? 'Saving...' : 'Save Changes'}
@@ -415,7 +429,7 @@ export default function TripDetails({ params }: PageProps) {
                   <Button
                     onClick={() => setIsEditing(true)}
                     variant="secondary"
-                    className="shadow-md shadow-emerald-650/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+                    className="shadow-md shadow-emerald-600/10 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
                     leftIcon={<Edit2 className="h-3.5 w-3.5" />}
                   >
                     Edit Itinerary
@@ -458,7 +472,7 @@ export default function TripDetails({ params }: PageProps) {
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">Specifications</span>
               
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
-                <span className="text-slate-450 flex items-center gap-1.5">
+                <span className="text-slate-400 flex items-center gap-1.5">
                   <Users className="h-3.5 w-3.5" /> Travelers
                 </span>
                 <Badge variant="indigo" className="font-semibold">
@@ -467,14 +481,14 @@ export default function TripDetails({ params }: PageProps) {
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5 border-b border-slate-900/60">
-                <span className="text-slate-450 flex items-center gap-1.5">
+                <span className="text-slate-400 flex items-center gap-1.5">
                   <DollarSign className="h-3.5 w-3.5" /> Budget
                 </span>
                 <Badge variant="emerald" className="capitalize font-semibold">{currentTrip.budget_level}</Badge>
               </div>
 
               <div className="flex items-center justify-between text-xs py-1.5">
-                <span className="text-slate-450 flex items-center gap-1.5">
+                <span className="text-slate-400 flex items-center gap-1.5">
                   <Activity className="h-3.5 w-3.5" /> Travel Pace
                 </span>
                 <Badge variant="cyan" className="capitalize font-semibold">{currentTrip.travel_pace}</Badge>
@@ -490,7 +504,7 @@ export default function TripDetails({ params }: PageProps) {
                 {currentTrip.interests.map((interest) => (
                   <span
                     key={interest}
-                    className="text-[10px] font-semibold text-slate-300 bg-slate-950 px-2.5 py-1 border border-slate-850 rounded-lg"
+                    className="text-[10px] font-semibold text-slate-300 bg-slate-950 px-2.5 py-1 border border-slate-800 rounded-lg"
                   >
                     {interest}
                   </span>
@@ -584,7 +598,7 @@ export default function TripDetails({ params }: PageProps) {
                     ) : (
                       <>
                         <h3 className="text-lg font-bold text-white tracking-tight">{day.title}</h3>
-                        {day.summary && <p className="text-slate-450 text-xs mt-1.5 leading-relaxed">{day.summary}</p>}
+                        {day.summary && <p className="text-slate-400 text-xs mt-1.5 leading-relaxed">{day.summary}</p>}
                       </>
                     )}
                   </div>
@@ -599,7 +613,7 @@ export default function TripDetails({ params }: PageProps) {
                 {day.activities.length === 0 ? (
                   <p className="text-slate-500 text-sm italic pt-4">No activities added for this day.</p>
                 ) : (
-                  <div className="relative pl-6 space-y-6 border-l border-slate-850 mt-4">
+                  <div className="relative pl-6 space-y-6 border-l border-slate-800 mt-4">
                     {day.activities.map((activity, aIdx) => {
                       const isMorning = activity.start_time ? activity.start_time < '12:00' : false;
                       const isEvening = activity.start_time ? activity.start_time >= '17:00' : false;
@@ -609,7 +623,7 @@ export default function TripDetails({ params }: PageProps) {
                       return (
                         <div key={activity.id} className="relative group/act">
                           {/* Timeline circle node */}
-                          <div className="absolute -left-[32.5px] top-2.5 w-3.5 h-3.5 rounded-full border-4 border-slate-955 bg-indigo-500 group-hover/act:scale-125 transition-transform" />
+                          <div className="absolute -left-[32.5px] top-2.5 w-3.5 h-3.5 rounded-full border-4 border-slate-950 bg-indigo-500 group-hover/act:scale-125 transition-transform" />
 
                           {isEditing ? (
                             <div className="space-y-4 bg-slate-950/60 p-4 border border-slate-900 hover:border-slate-800 rounded-xl transition-all">
@@ -731,7 +745,7 @@ export default function TripDetails({ params }: PageProps) {
                                 {activity.estimated_cost && (
                                   <span className="flex items-center gap-1.5">
                                     <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                                    <span>Estimated Cost: <span className="text-emerald-450">{activity.estimated_cost}</span></span>
+                                    <span>Estimated Cost: <span className="text-emerald-400">{activity.estimated_cost}</span></span>
                                   </span>
                                 )}
                                 {activity.notes && (

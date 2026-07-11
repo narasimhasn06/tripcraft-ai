@@ -14,6 +14,11 @@ import {
   Trash2, LogOut, ArrowRight, MapPin, Database, AlertTriangle 
 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
+const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
+  ssr: false,
+  loading: () => <div className="p-2 h-9 w-9 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0" />
+});
 
 interface Trip {
   id: string;
@@ -134,23 +139,32 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex-1 flex flex-col min-h-screen bg-slate-950 text-slate-100 pb-16">
+    <div className="flex-1 flex flex-col min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-16 transition-colors duration-300">
       {/* Navigation Header */}
-      <header className="border-b border-slate-900 bg-slate-900/20 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-tight text-white group" aria-label="TripCraft AI Home">
+      <header className="relative border-b border-slate-200 dark:border-slate-900 bg-white/70 dark:bg-slate-900/60 backdrop-blur-xl sticky top-0 z-50 px-4 sm:px-6 py-4 flex items-center justify-between overflow-hidden">
+        {/* Consistent travel-themed background design pattern */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-10 dark:opacity-[0.04] pointer-events-none mix-blend-overlay z-0" 
+          style={{ backgroundImage: "url('/landing_travel_bg.png')" }} 
+        />
+        {/* Subtle decorative glow */}
+        <div className="absolute top-0 right-1/4 w-96 h-full bg-gradient-to-r from-indigo-500/5 via-emerald-500/5 to-transparent blur-xl pointer-events-none z-0" />
+        
+        <Link href="/dashboard" className="relative flex items-center gap-2 text-xl font-bold tracking-tight text-slate-900 dark:text-white group z-10" aria-label="TripCraft AI Home">
           <Compass className="h-6 w-6 text-indigo-400 group-hover:rotate-45 transition-transform duration-300" />
           <span>TripCraft <span className="bg-gradient-to-r from-indigo-400 to-emerald-400 bg-clip-text text-transparent">AI</span></span>
         </Link>
         
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-400 hidden sm:inline-block px-2.5 py-1 bg-slate-900 rounded-full border border-slate-880">
+        <div className="relative flex items-center gap-3 z-10">
+          <ThemeToggle />
+          <span className="text-xs text-slate-600 dark:text-slate-400 hidden sm:inline-block px-2.5 py-1 bg-slate-100/90 dark:bg-slate-900/80 rounded-full border border-slate-200 dark:border-slate-800">
             {user?.email}
           </span>
           <Button
             onClick={signOut}
             size="sm"
             variant="outline"
-            className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all"
+            className="hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] transition-all bg-white/80 dark:bg-slate-900/80"
             leftIcon={<LogOut className="h-3.5 w-3.5" />}
           >
             Sign Out
@@ -164,10 +178,10 @@ export default function Dashboard() {
         {/* Connection Status Checker Banner */}
         {!isConnected && (
           <div className="mb-8">
-            <div className="flex items-start sm:items-center gap-2.5 px-4 py-3 bg-slate-900/60 border border-slate-880 text-slate-400 text-xs rounded-xl">
+            <div className="flex items-start sm:items-center gap-2.5 px-4 py-3 bg-slate-900/60 border border-slate-900 text-slate-400 text-xs rounded-xl">
               <Database className="h-4.5 w-4.5 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
               <div className="flex-1 leading-relaxed">
-                <span className="font-bold text-slate-300">Sandbox Demo Mode</span> (Local Storage) &mdash; Set your credentials in <code className="bg-slate-950 px-1 py-0.5 rounded border border-slate-850">.env.local</code> to activate live Supabase queries.
+                <span className="font-bold text-slate-300">Sandbox Demo Mode</span> (Local Storage) &mdash; Set your credentials in <code className="bg-slate-950 px-1 py-0.5 rounded border border-slate-800">.env.local</code> to activate live Supabase queries.
               </div>
             </div>
           </div>
@@ -176,10 +190,10 @@ export default function Dashboard() {
         {/* Welcome row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
           <div>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-              Welcome back, <span className="bg-gradient-to-r from-indigo-300 to-emerald-300 bg-clip-text text-transparent">Traveler</span>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+              Welcome back, <span className="bg-gradient-to-r from-indigo-500 to-emerald-500 dark:from-indigo-300 dark:to-emerald-300 bg-clip-text text-transparent">Traveler</span>
             </h1>
-            <p className="text-slate-400 mt-1.5 text-sm">
+            <p className="text-slate-600 dark:text-slate-400 mt-1.5 text-sm">
               Explore your saved itineraries or draft a new custom travel plan.
             </p>
           </div>
@@ -254,7 +268,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* Dates */}
-                      <div className="flex items-center gap-1.5 text-xs text-slate-450 mt-3 font-medium">
+                      <div className="flex items-center gap-1.5 text-xs text-slate-400 mt-3 font-medium">
                         <Calendar className="h-3.5 w-3.5 text-indigo-400" />
                         <span>
                           {new Date(trip.start_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}

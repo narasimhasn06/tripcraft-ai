@@ -30,11 +30,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     // Variant styles
     const variants = {
-      primary: 'bg-indigo-650 hover:bg-indigo-550 text-white shadow-lg shadow-indigo-650/10',
-      secondary: 'bg-emerald-650 hover:bg-emerald-550 text-white shadow-lg shadow-emerald-650/10',
-      outline: 'bg-transparent border border-slate-800 hover:bg-slate-900/50 hover:border-slate-700 text-slate-300 hover:text-white',
-      ghost: 'bg-transparent hover:bg-slate-900/40 text-slate-400 hover:text-white',
-      danger: 'bg-red-950/40 border border-red-900/40 hover:bg-red-900/20 text-red-400 hover:text-red-300',
+      primary: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/10',
+      secondary: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/10',
+      outline: 'bg-transparent border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900/50 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white',
+      ghost: 'bg-transparent hover:bg-slate-100 dark:hover:bg-slate-900/40 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white',
+      danger: 'bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/40 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300',
     };
 
     // Size styles

@@ -20,7 +20,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="space-y-1.5 w-full">
         {label && (
-          <label htmlFor={selectId} className="block text-xs font-semibold text-slate-350 tracking-wide">
+          <label htmlFor={selectId} className="block text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
             {label}
           </label>
         )}
@@ -29,13 +29,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           id={selectId}
           aria-invalid={!!error}
           aria-describedby={error ? errorId : undefined}
-          className={`block w-full rounded-xl bg-slate-950/85 border text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm px-4 py-2.5 ${
-            error ? 'border-red-500/50 focus:ring-red-500/20' : 'border-slate-800 focus:border-indigo-500'
+          className={`block w-full rounded-xl bg-white/90 dark:bg-slate-950/85 border text-slate-900 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-sm px-4 py-2.5 ${
+            error ? 'border-red-500/50 focus:ring-red-500/20' : 'border-slate-200 dark:border-slate-800 focus:border-indigo-500 dark:focus:border-indigo-500'
           } ${className}`}
           {...props}
         >
           {options.map((opt) => (
-            <option key={opt.value} value={opt.value} className="bg-slate-950 text-slate-200">
+            <option key={opt.value} value={opt.value} className="bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-200">
               {opt.label}
             </option>
           ))}
