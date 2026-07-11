@@ -403,18 +403,32 @@ export default function NewTripPage() {
             <Input
               id="startDate"
               label="Start Date *"
-              type="date"
+              type={startDate ? "date" : "text"}
               required
+              placeholder="YYYY-MM-DD"
               value={startDate}
+              onFocus={(e) => (e.target.type = "date")}
+              onBlur={(e) => {
+                if (!e.target.value) {
+                  e.target.type = "text";
+                }
+              }}
               onChange={(e) => setStartDate(e.target.value)}
               leftIcon={<Calendar className="h-4.5 w-4.5 text-slate-500" />}
             />
             <Input
               id="endDate"
               label="End Date *"
-              type="date"
+              type={endDate ? "date" : "text"}
               required
+              placeholder="YYYY-MM-DD"
               value={endDate}
+              onFocus={(e) => (e.target.type = "date")}
+              onBlur={(e) => {
+                if (!e.target.value) {
+                  e.target.type = "text";
+                }
+              }}
               onChange={(e) => setEndDate(e.target.value)}
               leftIcon={<Calendar className="h-4.5 w-4.5 text-slate-500" />}
             />

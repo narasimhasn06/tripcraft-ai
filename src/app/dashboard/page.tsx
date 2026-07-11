@@ -308,12 +308,6 @@ export default function Dashboard() {
 
                       {/* Card Footer action indicator */}
                       <div className="mt-6 flex items-center justify-end text-xs font-semibold text-slate-500 dark:text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition-colors gap-1">
-                        {isConnected && (
-                          <div className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/5 px-2 py-0.5 border border-emerald-500/10 rounded mr-auto">
-                            <Database className="h-3 w-3" />
-                            <span>DB Saved</span>
-                          </div>
-                        )}
                         <span>View Itinerary</span>
                         <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                       </div>
