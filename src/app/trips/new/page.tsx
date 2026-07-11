@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Compass, ArrowLeft, Sparkles, MapPin, Calendar } from 'lucide-react';
+import { Compass, ArrowLeft, Sparkles, MapPin, Calendar, X, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const ThemeToggle = dynamic(() => import('@/components/ThemeToggle').then((m) => m.ThemeToggle), {
@@ -42,6 +42,43 @@ const LOADING_STEPS = [
   'Almost ready! Finalizing your itinerary...',
 ];
 
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        } else {
+          resolve(img.src);
+        }
+      };
+      img.onerror = () => reject(new Error('Failed to load image.'));
+    };
+    reader.onerror = () => reject(new Error('Failed to read file.'));
+  });
+};
+
 export default function NewTripPage() {
   const router = useRouter();
   const { isConnected, user } = useAuth();
@@ -55,6 +92,8 @@ export default function NewTripPage() {
   const [travelPace, setTravelPace] = useState('balanced');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
+  const [coverImage, setCoverImage] = useState<string | null>(null);
+  const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
   
   // UI & Loading States
   const [loading, setLoading] = useState(false);
@@ -129,6 +168,10 @@ export default function NewTripPage() {
     setError(null);
 
     try {
+      const formattedNotes = coverImage 
+        ? (notes.trim() ? `${notes.trim()}\n\n[cover_image]:# (${coverImage})` : `[cover_image]:# (${coverImage})`)
+        : (notes.trim() || null);
+
       if (isConnected && user) {
         let activeTripId = createdTripId;
 
@@ -146,7 +189,7 @@ export default function NewTripPage() {
               budget_level: budgetLevel,
               travel_pace: travelPace,
               interests: selectedInterests,
-              notes: notes.trim() || null,
+              notes: formattedNotes,
               status: 'draft',
             })
             .select('id')
@@ -192,7 +235,7 @@ export default function NewTripPage() {
               budget_level: budgetLevel,
               travel_pace: travelPace,
               interests: selectedInterests,
-              notes: notes.trim() || null,
+              notes: formattedNotes,
               status: 'generated',
               created_at: new Date().toISOString(),
             };
@@ -538,6 +581,43 @@ export default function NewTripPage() {
             </div>
           </div>
 
+          {/* Cover Photo */}
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold text-slate-300 tracking-wide">
+              Cover Photo (Optional)
+            </label>
+            {coverImage ? (
+              <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950/60 shadow-inner group animate-in fade-in duration-200">
+                <img src={coverImage} alt="Cover preview" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-slate-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsPickerModalOpen(true)}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-md transition-all"
+                  >
+                    Change Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCoverImage(null)}
+                    className="px-3 py-1.5 bg-red-650 hover:bg-red-750 text-white rounded-lg font-bold text-xs shadow-md transition-all flex items-center gap-1"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsPickerModalOpen(true)}
+                className="flex items-center gap-2 px-4 py-3 w-full bg-slate-950/60 border border-slate-800/80 hover:bg-slate-900/50 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-semibold tracking-wide transition-all justify-center border-dashed"
+              >
+                <Compass className="h-4.5 w-4.5 text-indigo-400 animate-pulse" />
+                <span>Choose Cover Photo / Upload Image</span>
+              </button>
+            )}
+          </div>
+
           {/* Notes */}
           <Textarea
             id="notes"
@@ -560,6 +640,154 @@ export default function NewTripPage() {
           </div>
         </form>
       </main>
+
+      {/* Image Picker Modal */}
+      <ImagePickerModal
+        isOpen={isPickerModalOpen}
+        onClose={() => setIsPickerModalOpen(false)}
+        title="Select Trip Cover Photo"
+        currentImageUrl={coverImage}
+        onSelect={setCoverImage}
+      />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Image Picker Modal Component
+// ---------------------------------------------------------------------------
+interface ImagePickerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  currentImageUrl: string | null;
+  onSelect: (url: string | null) => void;
+}
+
+function ImagePickerModal({ isOpen, onClose, title, currentImageUrl, onSelect }: ImagePickerModalProps) {
+  const [customUrl, setCustomUrl] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [compressing, setCompressing] = useState(false);
+
+  if (!isOpen) return null;
+
+  const PRESETS = [
+    { name: 'Tropical Beach', url: '/travel_landing.jpg' },
+    { name: 'Mountain Lake', url: '/travel_itinerary.jpg' },
+    { name: 'Travel Journal', url: '/travel_dashboard_card.jpg' },
+    { name: 'Resort Day', url: '/auth_left_light.jpg' },
+    { name: 'Resort Night', url: '/auth_left_dark.jpg' },
+    { name: 'Group Flight', url: '/auth_bg.jpg' }
+  ];
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadError(null);
+    setCompressing(true);
+    try {
+      const base64 = await compressImage(file);
+      onSelect(base64);
+      onClose();
+    } catch (err) {
+      setUploadError('Failed to compress and upload image.');
+    } finally {
+      setCompressing(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative animate-in fade-in zoom-in-95 duration-200 text-white">
+        <button onClick={onClose} className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-800 transition-colors text-slate-400">
+          <X className="h-5 w-5" />
+        </button>
+
+        <h3 className="text-xl font-bold tracking-tight mb-4">{title}</h3>
+
+        {/* Current Preview */}
+        {currentImageUrl && (
+          <div className="mb-5 space-y-1.5">
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block">Current Image Preview</span>
+            <div className="relative h-32 w-full rounded-xl overflow-hidden border border-slate-800">
+              <img src={currentImageUrl} alt="Preview" className="w-full h-full object-cover" />
+              <button 
+                type="button"
+                onClick={() => {
+                  onSelect(null);
+                  onClose();
+                }}
+                className="absolute top-2 right-2 px-2.5 py-1.5 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center gap-1 border border-red-500/25"
+              >
+                <Trash2 className="h-3.5 w-3.5" /> Remove Cover
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Preset Grid */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-2">Select from Presets</span>
+            <div className="grid grid-cols-3 gap-2">
+              {PRESETS.map((preset) => (
+                <button
+                  key={preset.name}
+                  type="button"
+                  onClick={() => {
+                    onSelect(preset.url);
+                    onClose();
+                  }}
+                  className="group relative h-16 rounded-xl overflow-hidden border border-slate-850 hover:border-indigo-500 hover:ring-2 hover:ring-indigo-500/20 transition-all text-left w-full"
+                >
+                  <img src={preset.url} alt={preset.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-slate-950/40 flex items-end p-1">
+                    <span className="text-[9px] text-white font-semibold truncate w-full">{preset.name}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Local Upload */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-2">Or Upload a Photo</span>
+            <label className="flex flex-col items-center justify-center w-full h-20 border-2 border-dashed border-slate-800 rounded-xl cursor-pointer hover:bg-slate-950/40 transition-colors">
+              <div className="flex flex-col items-center justify-center pt-3 pb-3">
+                <Compass className="h-6 w-6 text-slate-400 mb-1" />
+                <p className="text-xs text-slate-400"><span className="font-semibold text-indigo-400">Click to upload</span> (Auto-optimized)</p>
+              </div>
+              <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} disabled={compressing} />
+            </label>
+            {compressing && <p className="text-xs text-indigo-500 animate-pulse mt-1">Compressing image...</p>}
+            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+          </div>
+
+          {/* Custom URL */}
+          <div>
+            <span className="text-[10px] font-bold text-slate-450 uppercase tracking-wider block mb-1.5">Or Paste Custom Image URL</span>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                placeholder="https://example.com/photo.jpg"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/30 text-white"
+                value={customUrl}
+                onChange={(e) => setCustomUrl(e.target.value)}
+              />
+              <Button
+                onClick={() => {
+                  if (customUrl.trim()) {
+                    onSelect(customUrl.trim());
+                    onClose();
+                  }
+                }}
+              >
+                Apply Link
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

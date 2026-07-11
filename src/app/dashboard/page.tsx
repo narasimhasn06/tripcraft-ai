@@ -32,6 +32,7 @@ interface Trip {
   interests: string[];
   status: string;
   created_at: string;
+  notes?: string | null;
 }
 
 export default function Dashboard() {
@@ -49,7 +50,7 @@ export default function Dashboard() {
         // Fetch only the authenticated user's trips from Supabase, newest first
         const { data, error } = await supabase
           .from('trips')
-          .select('id, title, destination, start_date, end_date, traveller_count, budget_level, travel_pace, interests, status, created_at')
+          .select('id, title, destination, start_date, end_date, traveller_count, budget_level, travel_pace, interests, status, created_at, notes')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -242,6 +243,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {trips.map((trip) => {
               const gradientStyles = getGradient(trip.destination);
+              const coverImageMatch = trip.notes?.match(/\[cover_image\]:# \((.*?)\)/);
+              const coverImageUrl = coverImageMatch ? coverImageMatch[1] : '/travel_dashboard_card.jpg';
               return (
                 <Link
                   key={trip.id}
@@ -255,7 +258,7 @@ export default function Dashboard() {
                     {/* Background image overlay */}
                     <div 
                       className="absolute inset-0 bg-cover bg-center opacity-30 dark:opacity-20 z-0 group-hover:scale-105 transition-transform duration-500" 
-                      style={{ backgroundImage: "url('/travel_dashboard_card.jpg')" }} 
+                      style={{ backgroundImage: `url('${coverImageUrl}')` }} 
                     />
                     {/* Visual gradient overlay on top of the image to colorize it */}
                     <div className={`absolute inset-0 bg-gradient-to-br ${gradientStyles} opacity-10 dark:opacity-20 z-0`} />
