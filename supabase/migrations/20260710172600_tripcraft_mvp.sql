@@ -154,7 +154,13 @@ create policy "Users can update own profile"
 drop policy if exists "Users can select own trips" on trips;
 create policy "Users can select own trips"
   on trips for select
-  using (auth.uid() = user_id or notes ilike '%' || coalesce(auth.email(), '') || '%');
+  using (
+    auth.uid() = user_id 
+    or (
+      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+    )
+  );
 
 drop policy if exists "Users can insert own trips" on trips;
 create policy "Users can insert own trips"
@@ -164,8 +170,20 @@ create policy "Users can insert own trips"
 drop policy if exists "Users can update own trips" on trips;
 create policy "Users can update own trips"
   on trips for update
-  using (auth.uid() = user_id or notes ilike '%' || coalesce(auth.email(), '') || '%')
-  with check (auth.uid() = user_id or notes ilike '%' || coalesce(auth.email(), '') || '%');
+  using (
+    auth.uid() = user_id 
+    or (
+      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+    )
+  )
+  with check (
+    auth.uid() = user_id 
+    or (
+      coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+      and notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+    )
+  );
 
 drop policy if exists "Users can delete own trips" on trips;
 create policy "Users can delete own trips"
@@ -180,7 +198,13 @@ create policy "Users can select own trip itinerary days"
     exists (
       select 1 from trips
       where trips.id = itinerary_days.trip_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -191,7 +215,13 @@ create policy "Users can insert own trip itinerary days"
     exists (
       select 1 from trips
       where trips.id = itinerary_days.trip_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -202,14 +232,26 @@ create policy "Users can update own trip itinerary days"
     exists (
       select 1 from trips
       where trips.id = itinerary_days.trip_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   )
   with check (
     exists (
       select 1 from trips
       where trips.id = itinerary_days.trip_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -220,7 +262,13 @@ create policy "Users can delete own trip itinerary days"
     exists (
       select 1 from trips
       where trips.id = itinerary_days.trip_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -233,7 +281,13 @@ create policy "Users can select own trip activities"
       select 1 from itinerary_days
       join trips on trips.id = itinerary_days.trip_id
       where itinerary_days.id = activities.itinerary_day_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -245,7 +299,13 @@ create policy "Users can insert own trip activities"
       select 1 from itinerary_days
       join trips on trips.id = itinerary_days.trip_id
       where itinerary_days.id = activities.itinerary_day_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -257,7 +317,13 @@ create policy "Users can update own trip activities"
       select 1 from itinerary_days
       join trips on trips.id = itinerary_days.trip_id
       where itinerary_days.id = activities.itinerary_day_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   )
   with check (
@@ -265,7 +331,13 @@ create policy "Users can update own trip activities"
       select 1 from itinerary_days
       join trips on trips.id = itinerary_days.trip_id
       where itinerary_days.id = activities.itinerary_day_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
 
@@ -277,6 +349,12 @@ create policy "Users can delete own trip activities"
       select 1 from itinerary_days
       join trips on trips.id = itinerary_days.trip_id
       where itinerary_days.id = activities.itinerary_day_id
-      and (trips.user_id = auth.uid() or trips.notes ilike '%' || coalesce(auth.email(), '') || '%')
+      and (
+        trips.user_id = auth.uid() 
+        or (
+          coalesce(nullif(current_setting('request.jwt.claim.email', true), ''), '') <> '' 
+          and trips.notes ilike '%' || current_setting('request.jwt.claim.email', true) || '%'
+        )
+      )
     )
   );
