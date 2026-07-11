@@ -145,6 +145,7 @@ export default function TripDetails({ params }: PageProps) {
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [capturedSelfie, setCapturedSelfie] = useState<string | null>(null);
+  const [selfieTarget, setSelfieTarget] = useState<{ type: 'trip' } | { type: 'activity'; dayId: string; activityId: string } | null>(null);
 
   // Parse notes clean vs formatted
   const { text: cleanNotes, imageUrls: allTripImages } = (() => {
@@ -224,13 +225,44 @@ export default function TripDetails({ params }: PageProps) {
         if (compCtx) {
           compCtx.drawImage(img, 0, 0, width, height);
           const compressedBase64 = compCanvas.toDataURL('image/jpeg', 0.7);
-          handleUpdateImages([...allTripImages, compressedBase64]);
+          if (selfieTarget?.type === 'activity') {
+            const { dayId, activityId } = selfieTarget;
+            const act = editableTrip?.itinerary_days
+              .find(d => d.id === dayId)?.activities
+              .find(a => a.id === activityId);
+            const notesContent = act?.notes || '';
+            const regex = /\s*\[activity_images\]:# \((.*?)\)/;
+            const match = notesContent.match(regex);
+            const actImages = match ? match[1].split('|||') : [];
+            handleUpdateActivityImages(dayId, activityId, [...actImages, compressedBase64]);
+          } else {
+            handleUpdateImages([...allTripImages, compressedBase64]);
+          }
         }
       };
       closeCamera();
     } catch (err) {
       console.error('Failed to save captured selfie:', err);
     }
+  };
+
+  const handleUpdateActivityImages = (dayId: string, activityId: string, imageUrls: string[]) => {
+    if (!editableTrip) return;
+    const days = editableTrip.itinerary_days.map(d => {
+      if (d.id !== dayId) return d;
+      const activities = d.activities.map(a => {
+        if (a.id !== activityId) return a;
+        const notesContent = a.notes || '';
+        const regex = /\s*\[activity_images\]:# \((.*?)\)/;
+        const cleanText = notesContent.replace(regex, '').trim();
+        const updatedNotes = imageUrls.length > 0
+          ? `${cleanText}\n\n[activity_images]:# (${imageUrls.join('|||')})`.trim()
+          : cleanText;
+        return { ...a, notes: updatedNotes || null };
+      });
+      return { ...d, activities };
+    });
+    setEditableTrip({ ...editableTrip, itinerary_days: days });
   };
 
   const handleUpdateImages = (newImages: string[]) => {
@@ -988,31 +1020,40 @@ export default function TripDetails({ params }: PageProps) {
                       const badgeVariant = isMorning ? 'amber' : isEvening ? 'indigo' : 'emerald';
                       const cardBorderColor = getCategoryBorder(activity.category);
 
+                      const { text: cleanNotesText, imageUrls: activityImages } = (() => {
+                        const notesContent = activity.notes || '';
+                        const regex = /\s*\[activity_images\]:# \((.*?)\)/;
+                        const match = notesContent.match(regex);
+                        const listImages = match ? match[1].split('|||') : [];
+                        const finalClean = notesContent.replace(regex, '').trim();
+                        return { text: finalClean, imageUrls: listImages };
+                      })();
+
                       return (
                         <div key={activity.id} className="relative group/act">
                           {/* Timeline circle node */}
                           <div className="absolute -left-[32.5px] top-2.5 w-3.5 h-3.5 rounded-full border-4 border-slate-950 bg-indigo-500 group-hover/act:scale-125 transition-transform" />
 
                           {isEditing ? (
-                            <div className="space-y-4 bg-slate-950/60 p-4 border border-slate-900 hover:border-slate-800 rounded-xl transition-all">
-                              <div className="flex items-center justify-between border-b border-slate-900 pb-2">
-                                <span className="text-xs font-bold text-indigo-400">Activity #{aIdx + 1}</span>
+                            <div className="space-y-4 bg-slate-50 dark:bg-slate-950/60 p-4 border border-slate-200 dark:border-slate-900 hover:border-slate-300 dark:hover:border-slate-800 rounded-xl transition-all">
+                              <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-900 pb-2">
+                                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">Activity #{aIdx + 1}</span>
                               </div>
                               
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Start Time (HH:MM)</label>
+                                  <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Start Time (HH:MM)</label>
                                   <input
                                     type="time"
-                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                                     value={activity.start_time?.substring(0, 5) || ''}
                                     onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'start_time', e.target.value ? `${e.target.value}:00` : null)}
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Category</label>
+                                  <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Category</label>
                                   <select
-                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                                     value={activity.category || ''}
                                     onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'category', e.target.value || null)}
                                   >
@@ -1030,19 +1071,19 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
 
                               <div>
-                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Activity Title</label>
+                                <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Activity Title</label>
                                 <input
                                   type="text"
-                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs font-semibold focus:outline-none transition-all"
+                                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none transition-all"
                                   value={activity.title}
                                   onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'title', e.target.value)}
                                 />
                               </div>
 
                               <div>
-                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Description</label>
+                                <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Description</label>
                                 <textarea
-                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                                   rows={2}
                                   value={activity.description || ''}
                                   onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'description', e.target.value || null)}
@@ -1051,19 +1092,19 @@ export default function TripDetails({ params }: PageProps) {
 
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Location</label>
+                                  <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Location</label>
                                   <input
                                     type="text"
-                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                                     value={activity.location || ''}
                                     onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'location', e.target.value || null)}
                                   />
                                 </div>
                                 <div>
-                                  <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Estimated Cost</label>
+                                  <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Estimated Cost</label>
                                   <input
                                     type="text"
-                                    className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
+                                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
                                     value={activity.estimated_cost || ''}
                                     onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'estimated_cost', e.target.value || null)}
                                   />
@@ -1071,17 +1112,83 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
 
                               <div>
-                                <label className="text-[9px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Special Notes / Tips</label>
+                                <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block mb-1">Special Notes / Tips</label>
                                 <input
                                   type="text"
-                                  className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-white text-xs focus:outline-none transition-all"
-                                  value={activity.notes || ''}
-                                  onChange={(e) => handleUpdateActivityField(day.id, activity.id, 'notes', e.target.value || null)}
+                                  className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-3 py-1.5 text-slate-900 dark:text-white text-xs focus:outline-none transition-all"
+                                  value={cleanNotesText}
+                                  onChange={(e) => {
+                                    const cleanText = e.target.value || '';
+                                    const updatedNotes = activityImages.length > 0
+                                      ? `${cleanText}\n\n[activity_images]:# (${activityImages.join('|||')})`.trim()
+                                      : cleanText;
+                                    handleUpdateActivityField(day.id, activity.id, 'notes', updatedNotes || null);
+                                  }}
                                 />
+                              </div>
+
+                              {/* Activity Photos Edit Section */}
+                              <div className="space-y-2 pt-2.5 border-t border-slate-200 dark:border-slate-900">
+                                <label className="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider block">Activity Photos ({activityImages.length})</label>
+                                <div className="flex flex-wrap gap-2 items-center">
+                                  {activityImages.map((imgUrl, imgIdx) => (
+                                    <div key={imgIdx} className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-900/50">
+                                      <img src={imgUrl} alt={`Activity photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const updated = activityImages.filter((_, i) => i !== imgIdx);
+                                          handleUpdateActivityImages(day.id, activity.id, updated);
+                                        }}
+                                        className="absolute top-0.5 right-0.5 p-0.5 bg-red-650/90 hover:bg-red-700 text-white rounded shadow-md transition-all focus:outline-none cursor-pointer"
+                                      >
+                                        <X className="h-2 w-2" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <div className="flex gap-1.5">
+                                    <label className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-700 rounded-lg cursor-pointer bg-slate-50/50 dark:bg-slate-950/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors">
+                                      <Plus className="h-3.5 w-3.5 mb-0.5 text-indigo-500 dark:text-indigo-400" />
+                                      <span className="text-[6px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Drive</span>
+                                      <input 
+                                        type="file" 
+                                        className="hidden" 
+                                        accept="image/*" 
+                                        multiple 
+                                        onChange={async (e) => {
+                                          const files = e.target.files;
+                                          if (!files) return;
+                                          const newImages = [...activityImages];
+                                          for (let i = 0; i < files.length; i++) {
+                                            try {
+                                              const base64 = await compressImage(files[i]);
+                                              newImages.push(base64);
+                                            } catch (err) {
+                                              console.error(err);
+                                            }
+                                          }
+                                          handleUpdateActivityImages(day.id, activity.id, newImages);
+                                          e.target.value = '';
+                                        }} 
+                                      />
+                                    </label>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setSelfieTarget({ type: 'activity', dayId: day.id, activityId: activity.id });
+                                        openCamera();
+                                      }}
+                                      className="flex flex-col items-center justify-center w-12 h-12 border border-dashed border-slate-300 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-955/40 hover:bg-slate-100/50 dark:hover:bg-slate-950/60 transition-colors cursor-pointer"
+                                    >
+                                      <Compass className="h-3.5 w-3.5 mb-0.5 text-indigo-500 dark:text-indigo-400 animate-pulse" />
+                                      <span className="text-[6px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Selfie</span>
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           ) : (
-                            <Card className="p-4 sm:p-5 transition-all bg-slate-50/70 dark:bg-slate-950/40 hover:bg-slate-100/80 dark:hover:bg-slate-950/80 border border-slate-200 dark:border-slate-800/60 shadow-sm relative z-10">
+                            <Card className="p-4 sm:p-5 transition-all bg-slate-50/70 dark:bg-slate-955/40 hover:bg-slate-100/80 dark:hover:bg-slate-950/80 border border-slate-200 dark:border-slate-800/60 shadow-sm relative z-10">
                               <div className="space-y-1 mb-2.5">
                                 <div className="flex flex-wrap gap-2 items-center">
                                   {activity.start_time && (
@@ -1100,29 +1207,61 @@ export default function TripDetails({ params }: PageProps) {
                               </div>
 
                               {activity.description && (
-                                <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">{activity.description}</p>
+                                <p className="text-slate-650 dark:text-slate-400 text-xs sm:text-sm leading-relaxed">{activity.description}</p>
                               )}
 
-                              <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 pt-3 border-t border-slate-900/60 text-[10px] text-slate-500 font-medium">
+                              <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-3.5 pt-3 border-t border-slate-200 dark:border-slate-900/60 text-[10px] text-slate-500 font-medium">
                                 {activity.location && (
-                                  <span className="flex items-center gap-1.5">
-                                    <MapPin className="h-3.5 w-3.5 text-indigo-400" />
+                                  <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                                    <MapPin className="h-3.5 w-3.5 text-indigo-500 dark:text-indigo-400" />
                                     <span>{activity.location}</span>
                                   </span>
                                 )}
                                 {activity.estimated_cost && (
-                                  <span className="flex items-center gap-1.5">
-                                    <DollarSign className="h-3.5 w-3.5 text-emerald-500" />
-                                    <span>Estimated Cost: <span className="text-emerald-400">{activity.estimated_cost}</span></span>
+                                  <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                                    <DollarSign className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" />
+                                    <span>Estimated Cost: <span className="text-emerald-700 dark:text-emerald-400 font-semibold">{activity.estimated_cost}</span></span>
                                   </span>
                                 )}
-                                {activity.notes && (
-                                  <span className="flex items-center gap-1.5 italic text-slate-500">
-                                    <FileText className="h-3.5 w-3.5 text-slate-600" />
-                                    <span>{activity.notes}</span>
+                                {cleanNotesText && (
+                                  <span className="flex items-center gap-1.5 italic text-slate-600 dark:text-slate-400">
+                                    <FileText className="h-3.5 w-3.5 text-slate-500" />
+                                    <span>{cleanNotesText}</span>
                                   </span>
                                 )}
                               </div>
+
+                              {/* Activity Level Photos Row */}
+                              {activityImages.length > 0 && (
+                                <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-900/60">
+                                  <div className="flex flex-wrap gap-2 items-center">
+                                    {activityImages.slice(0, 3).map((imgUrl, imgIdx) => (
+                                      <div 
+                                        key={imgIdx} 
+                                        className="relative w-12 h-12 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:scale-105 active:scale-95 transition-transform shadow-sm cursor-pointer"
+                                        onClick={() => {
+                                          setGalleryImages(activityImages);
+                                          setSelectedGalleryImage(imgUrl);
+                                        }}
+                                      >
+                                        <img src={imgUrl} alt={`Activity photo ${imgIdx + 1}`} className="w-full h-full object-cover" />
+                                      </div>
+                                    ))}
+                                    {activityImages.length > 3 && (
+                                      <button
+                                        type="button"
+                                        className="w-12 h-12 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800 shadow-sm text-slate-500 dark:text-slate-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-all hover:scale-105 cursor-pointer"
+                                        onClick={() => {
+                                          setGalleryImages(activityImages);
+                                          setSelectedGalleryImage(activityImages[0]);
+                                        }}
+                                      >
+                                        <span className="font-extrabold text-sm tracking-widest -mt-1 text-slate-500 hover:text-indigo-500 dark:hover:text-indigo-400">...</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </Card>
                           )}
                         </div>
