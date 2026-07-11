@@ -69,13 +69,16 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       getInitialSession();
 
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (_event, session) => {
+        (event, session) => {
           if (session) {
             setSession(session);
             setUser({
               id: session.user.id,
               email: session.user.email || '',
             });
+            if (event === 'PASSWORD_RECOVERY') {
+              router.push('/auth?view=update_password');
+            }
           } else {
             setSession(null);
             setUser(null);
@@ -118,6 +121,10 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
       router.push(`/auth?next=${encodeURIComponent(pathname)}`);
     } else if (user && pathname === '/auth') {
       const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      if (view === 'update_password') {
+        return; // Allow stay on /auth to update password
+      }
       const nextParam = params.get('next');
       router.push(nextParam ? decodeURIComponent(nextParam) : '/dashboard');
     }

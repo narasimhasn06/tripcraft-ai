@@ -7,7 +7,13 @@ export default function AuthCallback() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace('/dashboard');
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type');
+    if (type === 'recovery') {
+      router.replace('/auth?view=update_password');
+    } else {
+      router.replace('/dashboard');
+    }
   }, [router]);
 
   return null;

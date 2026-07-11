@@ -11,7 +11,7 @@ import { LoadingState } from '@/components/ui/loading-state';
 import { ErrorState } from '@/components/ui/error-state';
 import { 
   Compass, Plus, Calendar, Users, DollarSign, Activity, 
-  Trash2, LogOut, ArrowRight, MapPin, Database, CheckCircle2, AlertTriangle 
+  Trash2, LogOut, ArrowRight, MapPin, Database, AlertTriangle 
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -162,23 +162,16 @@ export default function Dashboard() {
       <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 mt-6 flex-1 flex flex-col">
         
         {/* Connection Status Checker Banner */}
-        <div className="mb-8">
-          {isConnected ? (
-            <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-500/5 border border-emerald-500/20 text-emerald-400 text-xs rounded-xl shadow-sm">
-              <CheckCircle2 className="h-4.5 w-4.5 text-emerald-400 shrink-0" />
-              <div className="flex-1">
-                <span className="font-bold">Live Supabase Connected</span> &mdash; Trip records are stored in PostgreSQL with active Row-Level Security.
-              </div>
-            </div>
-          ) : (
+        {!isConnected && (
+          <div className="mb-8">
             <div className="flex items-start sm:items-center gap-2.5 px-4 py-3 bg-slate-900/60 border border-slate-880 text-slate-400 text-xs rounded-xl">
               <Database className="h-4.5 w-4.5 text-amber-500 shrink-0 mt-0.5 sm:mt-0" />
               <div className="flex-1 leading-relaxed">
                 <span className="font-bold text-slate-300">Sandbox Demo Mode</span> (Local Storage) &mdash; Set your credentials in <code className="bg-slate-950 px-1 py-0.5 rounded border border-slate-850">.env.local</code> to activate live Supabase queries.
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Welcome row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 mb-10">
