@@ -318,10 +318,10 @@ export default function AuthPage() {
                   type="button"
                   variant="outline"
                   onClick={handleGoogleSignIn}
-                  className="w-full py-3 hover:-translate-y-0.5 active:translate-y-0 transition-all border-slate-800 hover:bg-slate-900 flex justify-center items-center"
+                  className="w-full py-3 hover:-translate-y-0.5 active:translate-y-0 transition-all border-slate-800 hover:bg-slate-900"
                   isLoading={loading}
+                  leftIcon={<GoogleIcon />}
                 >
-                  <GoogleIcon />
                   Continue with Google
                 </Button>
               </>
